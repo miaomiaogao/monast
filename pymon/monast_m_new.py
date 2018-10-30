@@ -345,7 +345,7 @@ class MonastHTTP(resource.Resource):
 			'peers': {},
 			'channels': [],
 			'bridges': [],
-			'meetmes': [],
+			'meetmes': {},
 			'queues': [],
 			'queueMembers': [],
 			'queueClients': [],
@@ -370,9 +370,14 @@ class MonastHTTP(resource.Resource):
 		tmp[servername]['bridges'].reverse()
 		#tmp[servername]['bridges'].sort(lambda x, y: cmp(x.get('dialtime'), y.get('dialtime')))
 		## Meetmes
-		for meetmeroom, meetme in server.status.meetmes.items():
-			tmp[servername]['meetmes'].append(meetme.__dict__)
-		tmp[servername]['meetmes'].sort(lambda x, y: cmp(x.get('meetme'), y.get('meetme')))
+		# for meetmeroom, meetme in server.status.meetmes.items():
+		# 	tmp[servername]['meetmes'].append(meetme.__dict__)
+		# tmp[servername]['meetmes'].sort(lambda x, y: cmp(x.get('meetme'), y.get('meetme')))
+		for roomtype, roomlist in server.status.meetmes.items():
+			tmp[servername]['meetmes'][roomtype] = []
+			for roomname, room in roomlist.items():
+				tmp[servername]['meetmes'][roomtype].append(room.__dict__)
+			tmp[servername]['meetmes'][roomtype].sort(lambda x, y: cmp(x.get('roomname'), y.get('roomname')))
 		## Parked Calls
 		for channel, parked in server.status.parkedCalls.items():
 			tmp[servername]['parkedCalls'].append(parked.__dict__)
@@ -597,6 +602,7 @@ class Monast:
 			'QueueMemberAdd'     : ('queue', self.clientAction_QueueMemberAdd),
 			'QueueMemberRemove'  : ('queue', self.clientAction_QueueMemberRemove),
 			'MeetmeKick'         : ('originate', self.clientAction_MeetmeKick),
+			# 'ConfbridgeKick'     : ('originate', self.clientAction_ConfbridgeKick),
 			'SpyChannel'         : ('spy', self.clientAction_SpyChannel),
 		}
 		
@@ -950,75 +956,99 @@ class Monast:
 	## Meetme
 	def _createMeetme(self, servername, **kw):
 		server     = self.servers.get(servername)
-		meetmeroom = kw.get('meetme')
+		roomtype = kw.get('roomtype')
+		roomname = kw.get('roomname')
+		##meetmeroom = kw.get('meetme')
 		dynamic    = kw.get("dynamic", False)
 		forced     = kw.get("forced", False)
 		_log       = kw.get('_log')
-		meetme     = server.status.meetmes.get(meetmeroom)
-		
-		if not meetme:
-			meetme = GenericObject("Meetme")
-			meetme.meetme  = meetmeroom
-			meetme.dynamic = dynamic
-			meetme.forced  = forced
-			meetme.users   = {}
-			
-			log.debug("Server %s :: Meetme create: %s %s", servername, meetme.meetme, _log)
-			server.status.meetmes[meetmeroom] = meetme
-			if dynamic:
-				self.http._addUpdate(servername = servername, **meetme.__dict__.copy())
-			if logging.DUMPOBJECTS:
-				log.debug("Object Dump:%s", meetme)
-		else:
-			log.warning("Server %s :: Meetme already exists: %s", servername, meetme.meetme)
-			
-		return meetme
-			
-	def _updateMeetme(self, servername, **kw):
-		meetmeroom = kw.get("meetme")
-		_log       = kw.get('_log', '')
-		try:
-			meetme = self.servers.get(servername).status.meetmes.get(meetmeroom)
+		##meetme     = server.status.meetmes.get(meetmeroom)
+		if not server.status.meetmes.has_key(roomtype) and kw.get('forced', False):
+			log.warning("Server %s :: Adding a not implemented RoomType %s (forced in config file)", servername, roomtype)
+			server.status.meetmes[roomtype] = {}
+
+		if server.status.meetmes.has_key(roomtype):
+			meetme = server.status.meetmes[roomtype].get(roomname)
 			if not meetme:
-				meetme = self._createMeetme(servername, meetme = meetmeroom, dynamic = True, _log = "(dynamic)")
-			
-			user = kw.get('addUser')
-			if user:
-				meetme.users[user.get('usernum')] = user
-				log.debug("Server %s :: Added user %s to Meetme %s %s", servername, user.get('usernum'), meetme.meetme, _log)
-				
-			user = kw.get('removeUser')
-			if user:
-				u = meetme.users.get(user.get('usernum'))
-				if u:
-					log.debug("Server %s :: Removed user %s from Meetme %s %s", servername, u.get('usernum'), meetme.meetme, _log)
-					del meetme.users[u.get('usernum')]
-					
-			self.http._addUpdate(servername = servername, **meetme.__dict__.copy())
-					
-			if meetme.dynamic and len(meetme.users) == 0:
-				self._removeMeetme(servername, meetme = meetme.meetme, _log = "(dynamic)")
-			if logging.DUMPOBJECTS:
-				log.debug("Object Dump:%s", meetme)
-		except:
-			log.exception("Server %s :: Unhandled exception updating meetme: %s", servername, meetmeroom)
-			
-	def _removeMeetme(self, servername, **kw):
-		meetmeroom = kw.get("meetme")
-		_log       = kw.get('_log', '')
-		try:
-			server = self.servers.get(servername)
-			meetme = server.status.meetmes.get(meetmeroom)
-			if meetme:
-				log.debug("Server %s :: Meetme remove: %s %s", servername, meetme.meetme, _log)
-				del server.status.meetmes[meetme.meetme]
-				self.http._addUpdate(servername = servername, action = 'RemoveMeetme', meetme = meetme.meetme)
+				meetme = GenericObject("Meetme")
+				meetme.roomtype = roomtype
+				meetme.roomname = roomname
+				meetme.dynamic = dynamic
+				meetme.forced  = forced
+				meetme.users   = {}	
+				log.debug("Server %s :: create: %s/%s %s", servername, roomtype, roomname, _log)
+				server.status.meetmes[meetme.roomtype][meetme.roomname] = meetme
+				if dynamic:
+					self.http._addUpdate(servername = servername, **meetme.__dict__.copy())
 				if logging.DUMPOBJECTS:
 					log.debug("Object Dump:%s", meetme)
 			else:
-				log.warning("Server %s :: Meetme does not exists: %s", servername, meetmeroom)
+				log.warning("sServer %s :: Meetme already exists: %s/%s", servername, roomtype, roomname)
+
+		return meetme
+			
+	def _updateMeetme(self, servername, **kw):
+		# meetmeroom = kw.get("meetme")
+		roomtype = kw.get('roomtype')
+		roomname = kw.get('roomname')
+		_log     = kw.get('_log', '')
+		try:
+			if not self.servers.get(servername).status.meetmes.has_key(roomtype):
+				log.warning("Server %s :: Adding a not implemented RoomType %s ", servername, roomtype)
+				self.servers.get(servername).status.meetmes[roomtype] = {}
+
+			if self.servers.get(servername).status.meetmes.has_key(roomtype):
+				# meetme = self.servers.get(servername).status.meetmes[roomtype].get(roomname)
+				meetme = self.servers.get(servername).status.meetmes.get(roomtype, {}).get(roomname)
+				# get(channeltype, {}).get(peername)
+
+				if not meetme:
+					meetme = self._createMeetme(servername, roomtype = roomtype, roomname = roomname, dynamic = True, _log = "(dynamic)")
+
+			user = kw.get('addUser')
+			if user:
+				meetme.users[user.get('calleridnum')] = user
+				log.debug("Server %s :: Added user %s %s to %s %s", servername, user.get('calleridnum'), \
+														user.get('calleridname'), roomtype, roomname, _log)
+					
+			user = kw.get('removeUser')
+			if user:
+				u = meetme.users.get('calleridnum')
+				if u:
+					log.debug("Server %s :: Removed user %s from Meetme/Conference %s %s", servername, user.get('calleridnum'),\
+				 					 					user.get('calleridname'), roomtype, roomname, _log)
+					del meetme.users[u.get('calleridnum')]
+						
+			self.http._addUpdate(servername = servername, **meetme.__dict__.copy())
+						
+			if meetme.dynamic and len(meetme.users) == 0:
+				self._removeMeetme(servername, roomtype = roomtype, roomname = roomname, _log = "(dynamic)")
+			if logging.DUMPOBJECTS:
+				log.debug("Object Dump:%s", meetme)
+
+			print self.servers.get(servername)
+
 		except:
-			log.exception("Server %s :: Unhandled exception removing meetme: %s", servername, meetmeroom)
+			log.exception("Server %s :: Unhandled exception updating : %s/%s", servername, roomtype, roomname)
+			
+	def _removeMeetme(self, servername, **kw):
+		roomtype = kw.get("roomtype")
+		roomname = kw.get("roomname")
+		_log       = kw.get('_log', '')
+		try:
+			server = self.servers.get(servername)
+			meetme = server.status.meetmes.get(roomtype, {}).get(roomname)
+			if meetme:
+				log.debug("Server %s :: %s remove: %s %s", servername, roomtype, roomname, _log)
+				# del server.status.meetmes.get(roomtype,{})[meetme]
+				del server.status.meetmes.get(roomtype,{})[roomname]
+				self.http._addUpdate(servername = servername, action = 'RemoveMeetme', meetme = meetme)
+				if logging.DUMPOBJECTS:
+					log.debug("Object Dump:%s", meetme)
+			else:
+				log.warning("Server %s :: Meetme/Conference does not exists: %s/%s", servername, roomtype, roomname)
+		except:
+			log.exception("Server %s :: Unhandled exception removing meetme/conference: %s", servername, roomname)
 	
 	## Parked Calls
 	def _createParkedCall(self, servername, **kw):
@@ -1444,11 +1474,14 @@ class Monast:
 			if not server:
 				continue
 			
-			if (self.displayMeetmesDefault and display == "hide") or (not self.displayMeetmesDefault and display == "show"):
-				server.displayMeetmes[meetme] = True
+			roomtype, roomname = meetme.split('/',1)
+			if roomtype in server.status.meetmes.keys():
+				if (self.displayMeetmesDefault and display == "hide") or (not self.displayMeetmesDefault and display == "show"):
+					server.displayMeetmes[meetme] = True
 				
 			if display == "force":
-				self._createMeetme(servername, meetme = meetme, forced = True, _log = "By monast config")
+				##self._createMeetme(servername, meetme = meetme, forced = True, _log = "By monast config")
+				self._createMeetme(servername, roomtype = roomtype, roomname = roomname, forced = True, _log = "By monast config")
 					
 		## Queues
 		self.displayQueuesDefault = config.get('queues', 'default') == 'show'
@@ -1535,11 +1568,20 @@ class Monast:
 		
 		## Clear Server Status
 		toRemove = []
-		for meetmeroom, meetme in server.status.meetmes.items():
-			if not meetme.forced:
-				toRemove.append(meetmeroom)
-		for meetmeroom in toRemove:
-			del server.status.meetmes[meetmeroom]
+
+		for roomtypes, rooms in server.status.meetmes.items():
+			toRemove = []
+			for roomname, room in rooms.items():
+				if not room.forced:
+					toRemove.append(roomname)
+			for roomname in toRemove:
+				del rooms[roomname]
+
+		# for meetmeroom, meetme in server.status.meetmes.items():
+		# 	if not meetme.forced:
+		# 		toRemove.append(meetmeroom)
+		# for meetmeroom in toRemove:
+		# 	del server.status.meetmes[meetmeroom]
 		
 		server.status.channels.clear()
 		server.status.bridges.clear()
@@ -1660,17 +1702,17 @@ class Monast:
 		# 	.addCallbacks(onKhompChannelsShow, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting Khomp Channels"))
 		#
 		# Meetme
-		def onGetMeetmeConfig(result):
-			log.debug("Server %s :: Processing meetme.conf..." % servername)
-			for k, v in result.items():
-				if v.startswith("conf="):
-					meetmeroom = v.replace("conf=", "")
-					if (self.displayMeetmesDefault and not server.displayMeetmes.has_key(meetmeroom)) or (not self.displayMeetmesDefault and server.displayMeetmes.has_key(meetmeroom)):
-						self._createMeetme(servername, meetme = meetmeroom)
+		# def onGetMeetmeConfig(result):
+		# 	log.debug("Server %s :: Processing meetme.conf..." % servername)
+		# 	for k, v in result.items():
+		# 		if v.startswith("conf="):
+		# 			meetmeroom = v.replace("conf=", "")
+		# 			if (self.displayMeetmesDefault and not server.displayMeetmes.has_key(meetmeroom)) or (not self.displayMeetmesDefault and server.displayMeetmes.has_key(meetmeroom)):
+		# 				self._createMeetme(servername, meetme = meetmeroom)
 
-		log.debug("Server %s :: Requesting meetme.conf..." % servername)
-		server.pushTask(server.ami.getConfig, 'meetme.conf') \
-			.addCallbacks(onGetMeetmeConfig, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting meetme.conf"))
+		# log.debug("Server %s :: Requesting meetme.conf..." % servername)
+		# server.pushTask(server.ami.getConfig, 'meetme.conf') \
+		# 	.addCallbacks(onGetMeetmeConfig, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting meetme.conf"))
 		
 		# Queues
 		def onQueueStatus(events):
@@ -2045,7 +2087,17 @@ class Monast:
 		server = self.servers.get(servername)
 		server.pushTask(server.ami.command, "meetme kick %s %s" % (meetme, usernum)) \
 			.addErrback(self._onAmiCommandFailure, servername, "Error Executting Client Action Meetme Kick: %s -> %s..." % (meetme, usernum))
-			
+
+	# def clientAction_ConfbridgeKick(self, session, action):
+	# 	servername = action['server'][0]
+	# 	meetme     = action['meetme'][0]
+	# 	usernum    = action['usernum'][0]
+		
+	# 	log.info("Server %s :: Executting Client Action Conference Kick: %s -> %s..." % (servername, meetme, usernum))
+	# 	server = self.servers.get(servername)
+	# 	server.pushTask(server.ami.command, "meetme kick %s %s" % (meetme, usernum)) \
+	# 		.addErrback(self._onAmiCommandFailure, servername, "Error Executting Client Action Meetme Kick: %s -> %s..." % (meetme, usernum))
+
 	def clientAction_SpyChannel(self, session, action):
 		servername = action['server'][0]
 		server     = self.servers.get(servername)
@@ -2575,16 +2627,30 @@ class Monast:
 	
 	# Meetme Events
 	def handlerEventMeetmeJoin(self, ami, event):
-		log.debug("Server %s :: Processing Event MeetmeJoin..." % ami.servername)
+		log.debug("Server %s :: Processing Event Meetme/Conference Join..." % ami.servername)
 		meetme = event.get("meetme")
+		conference = event.get("conference")
+		if meetme :
+			roomtype = 'MEETMES' 
+			roomname = meetme
+		elif conference :
+			roomtype = 'CONFS'
+			roomname = conference
+		else :
+			roomtype = None
+			roomname = None
+			log.debug("Server %s :: Processing Unexpected Roomtype..." % ami.servername)
+		
 		
 		self._updateMeetme(
 			ami.servername,
-			meetme  = meetme,
+			# meetme  = meetme,
+			roomtype = roomtype,
+			roomname = roomname,
 			addUser = {
 				'uniqueid'     : event.get('uniqueid'), 
 				'channel'      : event.get('channel'),
-				'usernum'      : event.get("conference"), 
+				# 'usernum'      : event.get("conference"), 
 				'calleridnum'  : event.get("calleridnum"), 
 				'calleridname' : event.get("calleridname"),
 			}  
@@ -2592,16 +2658,29 @@ class Monast:
 		
 	# Meetme Events
 	def handlerEventMeetmeLeave(self, ami, event):
-		log.debug("Server %s :: Processing Event MeetmeLeave..." % ami.servername)
+		log.debug("Server %s :: Processing Event Meetme/Conference Leave..." % ami.servername)
 		meetme = event.get("meetme")
+		conference = event.get("conference")
+		if meetme :
+			roomtype = 'MEETMES' 
+			roomname = meetme
+		elif conference :
+			roomtype = 'CONFS'
+			roomname = conference
+		else :
+			roomtype = None
+			roomname = None
+			log.debug("Server %s :: Processing Unexpected Roomtype..." % ami.servername)
 		
 		self._updateMeetme(
 			ami.servername,
-			meetme  = meetme,
+			roomtype = roomtype,
+			roomname = roomname,
+
 			removeUser = {
 				'uniqueid'     : event.get('uniqueid'), 
 				'channel'      : event.get('channel'),
-				'usernum'      : event.get("conference"), 
+				# 'usernum'      : event.get("conference"), 
 				'calleridnum'  : event.get("calleridnum"), 
 				'calleridname' : event.get("calleridname"),
 			}  
