@@ -2918,7 +2918,7 @@ def RunMonast(MM):
 	# else:
 	# 	_logHandler = logging.StreamHandler(sys.stdout)
 
-	logfile = r'C:\MONAST\logs\test.log'
+	logfile = r'C:\MONAST\monast-3.0b4\logs\test.log'
 	_logHandler = logging.FileHandler(logfile, mode='w')  # rewrite for testing
 
 
