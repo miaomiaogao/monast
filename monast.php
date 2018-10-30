@@ -192,8 +192,8 @@ foreach ($techs as $tech)
 			{
 				$template->newBlock('peergroup');
 				$template->assign('technology', $tech);
-			//	$template->assign('group', $group);
-                $template->assign('group', $test);
+				$template->assign('group', $group);
+            //    $template->assign('group', $test);
 				$template->assign('count', $count);
 			}
 		}
@@ -259,23 +259,15 @@ foreach ($meets as $meet)
             {
                 
                 $template->assign('rooms',$room["roomname"]);
-                $template->assign('count',$tt); //count($num)
+//                $template->assign('count',$tt); //count($num)
             }
-            if (array_key_exists("users", $room))
-            {
-                
-                
-                $num = $room["users"];
-                $num_s = json_encode($num);
-                
-                $template->assign('roomusers', $num_s);
-
-                
-                
-            }
-            
-
-            
+//            if (array_key_exists("users", $room))
+//            {
+//                $num = $room["users"];
+//                $num_s = json_encode($num);
+//                
+//                $template->assign('roomusers', $num_s);
+//            }
         }
     
     }		
