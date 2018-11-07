@@ -174,7 +174,7 @@ foreach ($techs as $tech)
 			$template->newBlock('process');
 			$template->assign('json', str_replace("'", "\'", monast_json_encode(($peer))));
 			
-            if (array_key_exists("peergroup", $peer))
+			if (array_key_exists("peergroup", $peer))
 			{
 				if (array_key_exists($peer["peergroup"], $groups))
 					$groups[$peer["peergroup"]] += 1;
@@ -186,14 +186,14 @@ foreach ($techs as $tech)
 		foreach ($groups as $group => $count)
 		{
 			//$test = json_encode($group); 
-            $test =var_dump($group);
-            
-            if ($group != "No Group")
+			$test =var_dump($group);
+			
+			if ($group != "No Group")
 			{
 				$template->newBlock('peergroup');
 				$template->assign('technology', $tech);
 				$template->assign('group', $group);
-            //    $template->assign('group', $test);
+			//    $template->assign('group', $test);
 				$template->assign('count', $count);
 			}
 		}
@@ -237,41 +237,28 @@ sort($meets );
 foreach ($meets as $meet)
 {
 	$members = $status[$server]['meetmes'][$meet];
-    
-    if (count($members) > 0)
+	if (count($members) > 0)
 	{
-    
-        $template->newBlock('roomtypes');
-        $template->assign('roomtypes', $meet);
-        $template->assign('count', count($members));
-            	
-        
-        
-        foreach ($members as $idx => $room)
+		$template->newBlock('roomtypes');
+		$template->assign('roomtypes', $meet);
+		$template->assign('count', count($members));	
+		foreach ($members as $idx => $room)
 		{
-		    $ss = json_encode($room); 
+			$ss = json_encode($room); 
 			$template->newBlock('meetrooms');
-            $template->assign('roomtypes', $meet);
-            
-            $tt = json_encode($room); 
-            //{"roomtype":"CONFS","users":[],"forced":true,"dynamic":false,"roomname":"1902","objecttype":"Meetme"} (3)
-            if (array_key_exists("roomname", $room))
-            {
-                
-                $template->assign('rooms',$room["roomname"]);
-//                $template->assign('count',$tt); //count($num)
-            }
-//            if (array_key_exists("users", $room))
-//            {
-//                $num = $room["users"];
-//                $num_s = json_encode($num);
-//                
-//                $template->assign('roomusers', $num_s);
-//            }
-        }
-    
-    }		
-    
+			$template->assign('roomtypes', $meet);
+		
+			$tt = json_encode($room); 
+			//{"roomtype":"CONFS","users":[],"forced":true,"dynamic":false,"roomname":"1902","objecttype":"Meetme"} (3)
+			if (array_key_exists("roomname", $room))
+			{
+				$template->assign('rooms',$room["roomname"]);
+				$template->newBlock('process');
+				$template->assign('json', str_replace("'", "\'", monast_json_encode(($tt))));
+//				$template->assign('count',$tt); //count($num)
+			}
+		}
+	}
 }
 
  
