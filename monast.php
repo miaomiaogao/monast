@@ -154,6 +154,14 @@ if (MONAST_DEBUG_TAB || getValor('debug'))
 	$template->newBlock('debug_tab_div');
 }
 
+function console_log( $data ){
+	echo '<script>';
+	echo 'console.log('. json_encode( $data ) .')';
+	echo '</script>';
+}
+
+console_log("test");
+  
 // Users/Peers
 $techs = array_keys($status[$server]['peers']);
 sort($techs);
@@ -170,7 +178,7 @@ foreach ($techs as $tech)
 		$groups = array();
 		
 		foreach ($peers as $idx => $peer)
-		{
+		{	
 			$template->newBlock('process');
 			$template->assign('json', str_replace("'", "\'", monast_json_encode(($peer))));
 			
@@ -253,9 +261,8 @@ foreach ($meets as $meet)
 			if (array_key_exists("roomname", $room))
 			{
 				$template->assign('rooms',$room["roomname"]);
-				$template->newBlock('process');
-				$template->assign('json', str_replace("'", "\'", monast_json_encode(($tt))));
-//				$template->assign('count',$tt); //count($num)
+				// $template->newBlock('process');
+				// $template->assign('json', str_replace("'", "\'", monast_json_encode(($tt))));
 			}
 		}
 	}

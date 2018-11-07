@@ -161,6 +161,7 @@ var Monast = {
 		u.statuscolor = this.getColor(u.status);
 		u.callscolor  = u.calls > 0 ? this.getColor('in use') : this.getColor('not in use');
 		u.latency     = u.time == -1 ? "--" : u.time + " ms";
+		console.log("test js");
 		
 		if (Object.isUndefined(this.userspeers.get(u.id)))
 		{
@@ -173,6 +174,8 @@ var Monast = {
 				group = "-" + u.peergroup;
 			
 			$('fieldset-' + u.channeltype + group).appendChild(clone);
+
+			//console.log('fieldset-' + u.channeltype + group);
 			
 			// Drag & Drop
 			this.createDragDrop(u.id, this.dd_userPeerDrop, ['peerTable']);
@@ -1629,9 +1632,9 @@ var Monast = {
 					this.processBridge(event);
 					break;
 					
-				case "Meetme":
-					this.processMeetme(event);
-					break;
+				// case "Meetme":
+				// 	this.processMeetme(event);
+				// 	break;
 					
 				case "ParkedCall":
 					this.processParkedCall(event);
