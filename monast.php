@@ -160,15 +160,14 @@ function console_log( $data ){
 	echo '</script>';
 }
 
-console_log("test");
-  
 // Users/Peers
 $techs = array_keys($status[$server]['peers']);
 sort($techs);
+
 foreach ($techs as $tech)
 {
 	$peers = $status[$server]['peers'][$tech];
-	
+
 	if (count($peers) > 0)
 	{
 		$template->newBlock('technology');
@@ -182,6 +181,8 @@ foreach ($techs as $tech)
 			$template->newBlock('process');
 			$template->assign('json', str_replace("'", "\'", monast_json_encode(($peer))));
 			
+			//console_log(str_replace("'", "\'", monast_json_encode(($peer))));
+
 			if (array_key_exists("peergroup", $peer))
 			{
 				if (array_key_exists($peer["peergroup"], $groups))
@@ -190,12 +191,10 @@ foreach ($techs as $tech)
 					$groups[$peer["peergroup"]] = 1;
 			}
 		}
-		
+
 		foreach ($groups as $group => $count)
 		{
 			//$test = json_encode($group); 
-			$test =var_dump($group);
-			
 			if ($group != "No Group")
 			{
 				$template->newBlock('peergroup');
@@ -249,20 +248,41 @@ foreach ($meets as $meet)
 	{
 		$template->newBlock('roomtypes');
 		$template->assign('roomtypes', $meet);
-		$template->assign('count', count($members));	
+		$template->assign('count', count($members));
+
 		foreach ($members as $idx => $room)
 		{
-			$ss = json_encode($room); 
+
 			$template->newBlock('meetrooms');
 			$template->assign('roomtypes', $meet);
 		
-			$tt = json_encode($room); 
 			//{"roomtype":"CONFS","users":[],"forced":true,"dynamic":false,"roomname":"1902","objecttype":"Meetme"} (3)
-			if (array_key_exists("roomname", $room))
-			{
+			if (array_key_exists("roomname", $room)) {
 				$template->assign('rooms',$room["roomname"]);
-				// $template->newBlock('process');
-				// $template->assign('json', str_replace("'", "\'", monast_json_encode(($tt))));
+			}
+			else {
+				$template->assign('rooms',"NoName");
+			}
+
+			if(array_key_exists("users", $room)){
+				console_log($room);	
+				if(count($room[users]) > 0){
+					
+					foreach($room[users] as $user){
+						
+						$userinfo = array('objecttype' => 'Meetme', 'roomtype' => $room['roomtype'], 'roomname' =>$room['roomname'], 'user' => $user);
+
+						console_log($userinfo);
+						$template->newBlock('process');
+						$template->assign('json', str_replace("'", "\'", monast_json_encode(($userinfo))));
+						console_log(str_replace("'", "\'", monast_json_encode(($userinfo))));
+					}
+				}
+				else{
+					console_log('users are none!');
+				}
+				
+				
 			}
 		}
 	}

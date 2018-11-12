@@ -155,17 +155,18 @@ var Monast = {
 	// Users/Peers
 	userspeers: new Hash(),
 	processUserpeer: function (u)
-	{
+	{	
+		console.log(u);
 		u.id          = md5(u.channel);
 		u.status      = u.dnd && u.status == "No Alarm" ? "DND Enabled" : u.status;
 		u.statuscolor = this.getColor(u.status);
 		u.callscolor  = u.calls > 0 ? this.getColor('in use') : this.getColor('not in use');
 		u.latency     = u.time == -1 ? "--" : u.time + " ms";
-		console.log("test js");
 		
 		if (Object.isUndefined(this.userspeers.get(u.id)))
 		{
 			var clone           = Monast.buildClone("Template::Userpeer", u.id);
+			
 			clone.className     = "peerTable";
 			clone.oncontextmenu = function () { Monast.showUserpeerContextMenu(u.id); return false; };
 			
@@ -174,8 +175,6 @@ var Monast = {
 				group = "-" + u.peergroup;
 			
 			$('fieldset-' + u.channeltype + group).appendChild(clone);
-
-			//console.log('fieldset-' + u.channeltype + group);
 			
 			// Drag & Drop
 			this.createDragDrop(u.id, this.dd_userPeerDrop, ['peerTable']);
@@ -946,71 +945,75 @@ var Monast = {
 	// Meetmes
 	meetmes: new Hash(),
 	processMeetme: function (m)
-	{
-		m.id          = md5("meetme-" + m.meetme);
+	{	
+		console.log("js log meetmes:");
+		console.log(m);
+
+		m.id          = md5("meetme-" + m.uniqueid);
 		m.contextmenu = null; // FAKE
 		
 		if (Object.isUndefined(this.meetmes.get(m.id))) // Meetme does not exists
 		{
 			var clone       = Monast.buildClone("Template::Meetme", m.id);
 			clone.className = 'meetmeDivWrap';
-			$('meetmeDivWrapper').appendChild(clone);
+	
+			$('fieldset-' + m.roomtype + '-' + m.roomname).appendChild(clone);
 		}
 	
 		// Clear meetme users
-		$(m.id).select('[class="meetmeUser"]').each(function (el) { el.remove(); });
-		$(m.id + "-countMeetme").innerHTML = 0;
+		// $(m.id).select('[class="meetmeUser"]').each(function (el) { el.remove(); });
+		// $(m.id + "-countMeetme").innerHTML = 0;
 		
-		Object.keys(m).each(function (key) {
-			var elid = m.id + '-' + key;
-			if ($(elid))
-			{
-				switch (key)
-				{
-					case "contextmenu":
-						$(elid).oncontextmenu = function () { Monast.showMeetmeContextMenu(m.id); return false; };
-						break;
+		// Object.keys(m).each(function (key) {
+		// 	var elid = m.id + '-' + key;
+		// 	if ($(elid))
+		// 	{
+		// 		switch (key)
+		// 		{
+		// 			case "contextmenu":
+		// 				$(elid).oncontextmenu = function () { Monast.showMeetmeContextMenu(m.id); return false; };
+		// 				break;
 						
-					default:
-						$(elid).innerHTML = m[key];
-						break;
-				}
-			}
-		});
+		// 			default:
+		// 				$(elid).innerHTML = m[key];
+		// 				break;
+		// 		}
+		// 	}
+		// });
 		
-		if (!Object.isArray(m.users))
-		{
-			var keys = Object.keys(m.users).sort();
-			keys.each(function (user) {
-				var user          = m.users[user];
-				user.id           = md5("meetmeUser-" + m.meetme + "::" + user.usernum);
-				user.userinfo     = (user.calleridnum && user.calleridname) ? new Template("#{calleridname} &lt;#{calleridnum}&gt;").evaluate(user) : user.channel;
+		// if (!Object.isArray(m.users))
+		// {
+		// 	var keys = Object.keys(m.users).sort();
+		// 	keys.each(function (user) {
+		// 		var user          = m.users[user];
+		// 		user.id           = md5("meetmeUser-" + m.meetme + "::" + user.usernum);
+		// 		user.userinfo     = (user.calleridnum && user.calleridname) ? new Template("#{calleridname} &lt;#{calleridnum}&gt;").evaluate(user) : user.channel;
 				
-				if (!$(user.id))
-				{
-					var clone       = Monast.buildClone("Template::Meetme::User", user.id);
-					clone.className = "meetmeUser";
-					clone.oncontextmenu = function () { Monast.showMeetmeUserContextMenu(m.id, user); return false; };
-					$(m.id).appendChild(clone);
-				}
+		// 		if (!$(user.id))
+		// 		{
+		// 			var clone       = Monast.buildClone("Template::Meetme::User", user.id);
+		// 			clone.className = "meetmeUser";
+		// 			clone.oncontextmenu = function () { Monast.showMeetmeUserContextMenu(m.id, user); return false; };
+		// 			$(m.id).appendChild(clone);
+		// 		}
 				
-				Object.keys(user).each(function (key) {
-					var elid = user.id + '-' + key;
-					if ($(elid))
-					{
-						switch (key)
-						{
-							default:
-								$(elid).innerHTML = user[key];
-								break;
-						}
-					}
-				});
-			});
-			$(m.id + "-countMeetme").innerHTML = keys.length;
-		}
+		// 		Object.keys(user).each(function (key) {
+		// 			var elid = user.id + '-' + key;
+		// 			if ($(elid))
+		// 			{
+		// 				switch (key)
+		// 				{
+		// 					default:
+		// 						$(elid).innerHTML = user[key];
+		// 						break;
+		// 				}
+		// 			}
+		// 		});
+		// 	});
+		// 	$(m.id + "-countMeetme").innerHTML = keys.length;
+		// }
 
-		this.meetmes.set(m.id, m);
+		// this.meetmes.set(m.id, m);
 	},
 	removeMeetme: function (m)
 	{
@@ -1632,9 +1635,9 @@ var Monast = {
 					this.processBridge(event);
 					break;
 					
-				// case "Meetme":
-				// 	this.processMeetme(event);
-				// 	break;
+				case "Meetme":
+					this.processMeetme(event);
+					break;
 					
 				case "ParkedCall":
 					this.processParkedCall(event);
