@@ -280,29 +280,22 @@
 </div>
 
 <!-- Meetme -->
-<!-- <div class="hidden" id="Template::Meetme">
-  <div class="meetmeDivWrapper">   
-    <table width='250' monast="contextmenu">
-      <tr>
-        <td align='center' class='statusHeader'>Meetme "<span monast="user">&nbsp;</span>" (<span monast="countMeetme">0</span>)</td>
-      </tr>
-    </table>
-  </div>
-</div> -->
-
 <div class="hidden" id="Template::Meetme">
-  <table class="status" width="175px">
-    <tr>
-      <td colspan="4" bgcolor="#DDDDDD" nowrap="nowrap"><b><span monast="calleridname">&nbsp;</span></b></td>
-    </tr>
-  </table>
+  <div id="inviteMember">
+      <p> </p>
+      <p><button>Invite New Member</button></p>
+    </div>
+  <div id="meetmeRoomUsers">Members in this room:
+  </div>
 </div>
 
 <!-- MeetmeUser -->
 <div class="hidden" id="Template::Meetme::User">
   <table width='250'>
     <tr>
-      <td class='status'><span monast="userinfo">&nbsp;</span></td>
+      <td class='status'><span monast="calleridname">&nbsp;</span>:</td>
+      <!-- <td class='status'><span monast="calleridnum">&nbsp;</span></td> -->
+      <td class='status'><span monast="channel">&nbsp;</span></td>
     </tr>
   </table>
 </div>
@@ -326,15 +319,11 @@
       <td class="key">Callerid Number:</td>
       <td>#{calleridnum}</td>
     </tr>
-    <tr>
-      <td class="key">User Number:</td>
-      <td>#{usernum}</td>
-    </tr>
   </table>
 </div>
 
 <!-- Meetme Form Invite Numbers -->
-<div style="display: none" id="Template::Meetme::Form::InviteNumbers">
+<!-- <div style="display: none" id="Template::Meetme::Form::InviteNumbers">
   <table class="tableInfo">
     <tr>
       <td class="key">Meetme:</td>
@@ -353,7 +342,7 @@
       <td><textarea id="Meetme::Form::InviteNumbers::Numbers" cols="20" rows="5"></textarea></td>
     </tr>
   </table>
-</div>
+</div> -->
 
 <!-- Parked Call -->
 <div class="hidden" id="Template::ParkedCall">

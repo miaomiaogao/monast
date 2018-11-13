@@ -156,7 +156,7 @@ var Monast = {
 	userspeers: new Hash(),
 	processUserpeer: function (u)
 	{	
-		console.log(u);
+		//console.log(u);
 		u.id          = md5(u.channel);
 		u.status      = u.dnd && u.status == "No Alarm" ? "DND Enabled" : u.status;
 		u.statuscolor = this.getColor(u.status);
@@ -946,106 +946,108 @@ var Monast = {
 	meetmes: new Hash(),
 	processMeetme: function (m)
 	{	
-		console.log("js log meetmes:");
 		console.log(m);
 
-		m.id          = md5("meetme-" + m.uniqueid);
+		m.id          = md5("meetme-" + m.roomtype + m.roomname + m.users.uniqueid);
 		m.contextmenu = null; // FAKE
 		
 		if (Object.isUndefined(this.meetmes.get(m.id))) // Meetme does not exists
 		{
 			var clone       = Monast.buildClone("Template::Meetme", m.id);
 			clone.className = 'meetmeDivWrap';
-	
+			console.log(clone);
+
 			$('fieldset-' + m.roomtype + '-' + m.roomname).appendChild(clone);
+			
 		}
 	
 		// Clear meetme users
-		// $(m.id).select('[class="meetmeUser"]').each(function (el) { el.remove(); });
+		$(m.id).select('[class="meetmeUser"]').each(function (el) { el.remove(); });
 		// $(m.id + "-countMeetme").innerHTML = 0;
 		
-		// Object.keys(m).each(function (key) {
-		// 	var elid = m.id + '-' + key;
-		// 	if ($(elid))
-		// 	{
-		// 		switch (key)
-		// 		{
-		// 			case "contextmenu":
-		// 				$(elid).oncontextmenu = function () { Monast.showMeetmeContextMenu(m.id); return false; };
-		// 				break;
+		Object.keys(m).each(function (key) {
+			var elid = m.id + '-' + key;
+			if ($(elid)) {
+				switch (key){
+					case "contextmenu":
+						$(elid).oncontextmenu = function () { Monast.showMeetmeContextMenu(m.id); return false; };
+						break;
 						
-		// 			default:
-		// 				$(elid).innerHTML = m[key];
-		// 				break;
-		// 		}
-		// 	}
-		// });
+					default:
+						$(elid).innerHTML = m[key];
+						break;
+				}
+			}
+		});
 		
-		// if (!Object.isArray(m.users))
-		// {
-		// 	var keys = Object.keys(m.users).sort();
-		// 	keys.each(function (user) {
-		// 		var user          = m.users[user];
-		// 		user.id           = md5("meetmeUser-" + m.meetme + "::" + user.usernum);
-		// 		user.userinfo     = (user.calleridnum && user.calleridname) ? new Template("#{calleridname} &lt;#{calleridnum}&gt;").evaluate(user) : user.channel;
+		if (!Object.isArray(m.users)){
+			var keys = Object.keys(m.users).sort();
+			keys.each(function (user) {
+				var user          = m.users[user];
+				user.id           = md5("meetmeUser-" + "::" + user.uniqueid);
+				user.userinfo     = (user.calleridnum && user.calleridname) ? new Template("#{calleridname} &lt;#{calleridnum}&gt;").evaluate(user) : user.channel;
 				
-		// 		if (!$(user.id))
-		// 		{
-		// 			var clone       = Monast.buildClone("Template::Meetme::User", user.id);
-		// 			clone.className = "meetmeUser";
-		// 			clone.oncontextmenu = function () { Monast.showMeetmeUserContextMenu(m.id, user); return false; };
-		// 			$(m.id).appendChild(clone);
-		// 		}
+				if (!$(user.id)){
+					var clone       = Monast.buildClone("Template::Meetme::User", user.id);
+					clone.className = "meetmeUser";
+					clone.oncontextmenu = function () { Monast.showMeetmeUserContextMenu(m.id, user); return false; };
+					$(m.id).appendChild(clone);
+					//$(m.id.'meetmeRoomUsers').appendChild(clone);
+				}
 				
-		// 		Object.keys(user).each(function (key) {
-		// 			var elid = user.id + '-' + key;
-		// 			if ($(elid))
-		// 			{
-		// 				switch (key)
-		// 				{
-		// 					default:
-		// 						$(elid).innerHTML = user[key];
-		// 						break;
-		// 				}
-		// 			}
-		// 		});
-		// 	});
-		// 	$(m.id + "-countMeetme").innerHTML = keys.length;
-		// }
+				Object.keys(user).each(function (key) {
+					var elid = user.id + '-' + key;
+					if ($(elid))
+					{
+						switch (key)
+						{
+							default:
+								$(elid).innerHTML = user[key];
+								break;
+						}
+					}
+				});
+			});
+			//$(m.id + "-countMeetme").innerHTML = keys.length;
+		}
 
-		// this.meetmes.set(m.id, m);
+		this.meetmes.set(m.id, m);
+
 	},
+	
 	removeMeetme: function (m)
 	{
-		var id     = md5("meetme-" + m.meetme);
+		var id     = md5("meetme-" + m.users.uniqueid);
+
 		var meetme = this.meetmes.unset(id);
 		if (!Object.isUndefined(meetme))
 		{
 			$('meetmeDivWrapper').removeChild($(meetme.id));
+			console.log($(meetme.id)); 
 		}
 	},
-	_meetmeInviteNumbers: function (foo, m)
-	{
-		if (m == null)
-		{
-			var d = new Date();
-			m     = {meetme: "Monast-" + parseInt(d.getTime() / 1000)};
-		}
-		Monast.doConfirm(
-			new Template($("Template::Meetme::Form::InviteNumbers").innerHTML).evaluate(m),
-			function () {
-				new Ajax.Request('action.php', 
-				{
-					method: 'get',
-					parameters: {
-						reqTime: new Date().getTime(),
-						action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, to: $('Meetme::Form::InviteNumbers::Meetme').value, type: 'meetmeInviteNumbers'})
-					}
-				});
-			}
-		);
-		Monast.confirmDialog.setHeader('Invite Numbers to Meetme');
-	},
+	// _meetmeInviteNumbers: function (foo, m)
+	// {
+	// 	if (m == null)
+	// 	{
+	// 		var d = new Date();
+	// 		m     = {meetme: "Monast-" + parseInt(d.getTime() / 1000)};
+	// 	}
+	// 	Monast.doConfirm(
+	// 		new Template($("Template::Meetme::Form::InviteNumbers").innerHTML).evaluate(m),
+	// 		function () {
+	// 			new Ajax.Request('action.php', 
+	// 			{
+	// 				method: 'get',
+	// 				parameters: {
+	// 					reqTime: new Date().getTime(),
+	// 					action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, to: $('Meetme::Form::InviteNumbers::Meetme').value, type: 'meetmeInviteNumbers'})
+	// 				}
+	// 			});
+	// 		}
+	// 	);
+	// 	Monast.confirmDialog.setHeader('Invite Numbers to Meetme');
+	// },
 	showMeetmeContextMenu: function (id)
 	{
 		this._contextMenu.clearContent();
@@ -1079,14 +1081,14 @@ var Monast = {
 		var kickUser = function (p_sType, p_aArgs, p_oValue)
 		{
 			Monast.doConfirm(
-				"<div style='text-align: center'>Request Kick to this User from Meetme \"" + p_oValue.meetme + "\"?</div><br>" + new Template($("Template::Meetme::User::Info").innerHTML).evaluate(p_oValue.user),
+				"<div style='text-align: center'>Request Kick to this User from Room \"" + p_oValue.meetme + "\"?</div><br>" + new Template($("Template::Meetme::User::Info").innerHTML).evaluate(p_oValue.user),
 				function () {
 					new Ajax.Request('action.php', 
 					{
 						method: 'get',
 						parameters: {
 							reqTime: new Date().getTime(),
-							action: Object.toJSON({action: 'MeetmeKick', meetme: p_oValue.meetme, usernum: p_oValue.user.usernum})
+							action: Object.toJSON({action: 'MeetmeKick', meetme: p_oValue.roomname, usernum: p_oValue.user.calleridname})
 						}
 					});
 				}
@@ -1096,7 +1098,7 @@ var Monast = {
 		var meetme = this.meetmes.get(id);
 		var m = [
 			[
-				{text: "Kick User", onclick: {fn: kickUser, obj: {meetme: meetme.meetme, user: user}}},
+				{text: "Kick User", onclick: {fn: kickUser, obj: {meetme: meetme.roomname, user: user}}},
 				{text: "View User Info", onclick: {fn: viewUserInfo, obj: user}}
 			]
 		];
@@ -1663,7 +1665,8 @@ var Monast = {
 		
 		if (!Object.isUndefined(event.action))
 		{
-			//console.log("Action:", event.action, event);
+			// console.log("Action:", event.action, event);
+			
 			switch (event.action)
 			{
 				case "Error":

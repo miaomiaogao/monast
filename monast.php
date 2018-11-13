@@ -252,38 +252,17 @@ foreach ($meets as $meet)
 
 		foreach ($members as $idx => $room)
 		{
-
+			//{"roomtype":"CONFS","users":[],"forced":true,"dynamic":false,"roomname":"1902","objecttype":"Meetme"} (3)
 			$template->newBlock('meetrooms');
 			$template->assign('roomtypes', $meet);
-		
-			//{"roomtype":"CONFS","users":[],"forced":true,"dynamic":false,"roomname":"1902","objecttype":"Meetme"} (3)
-			if (array_key_exists("roomname", $room)) {
-				$template->assign('rooms',$room["roomname"]);
-			}
-			else {
-				$template->assign('rooms',"NoName");
-			}
+			$template->assign('rooms',$room["roomname"]);;
+			$template->assign('count', count($room['users']));
 
-			if(array_key_exists("users", $room)){
-				console_log($room);	
-				if(count($room[users]) > 0){
-					
-					foreach($room[users] as $user){
-						
-						$userinfo = array('objecttype' => 'Meetme', 'roomtype' => $room['roomtype'], 'roomname' =>$room['roomname'], 'user' => $user);
-
-						console_log($userinfo);
-						$template->newBlock('process');
-						$template->assign('json', str_replace("'", "\'", monast_json_encode(($userinfo))));
-						console_log(str_replace("'", "\'", monast_json_encode(($userinfo))));
-					}
-				}
-				else{
-					console_log('users are none!');
-				}
-				
-				
-			}
+			// if(count($room['users']) > 0){
+			$template->newBlock('process');
+			$template->assign('json', str_replace("'", "\'", monast_json_encode(($room))));
+			// console_log(str_replace("'", "\'", monast_json_encode(($room))));
+			// }
 		}
 	}
 }
