@@ -949,7 +949,6 @@ var Monast = {
 		console.log(m);
 
 		m.id          = md5("meetme-" + m.roomtype + m.roomname + m.users.uniqueid);
-		m.contextmenu = null; // FAKE
 		
 		if (Object.isUndefined(this.meetmes.get(m.id))) // Meetme does not exists
 		{
@@ -963,22 +962,24 @@ var Monast = {
 	
 		// Clear meetme users
 		$(m.id).select('[class="meetmeUser"]').each(function (el) { el.remove(); });
-		// $(m.id + "-countMeetme").innerHTML = 0;
 		
-		Object.keys(m).each(function (key) {
-			var elid = m.id + '-' + key;
-			if ($(elid)) {
-				switch (key){
-					case "contextmenu":
-						$(elid).oncontextmenu = function () { Monast.showMeetmeContextMenu(m.id); return false; };
-						break;
+		
+		$(m.id + '-' + 'inviteNumberButton').onclik = function() {Monast._meetmeInviteNumbers(null, this.meetmes.get(m.id)); return false};
+		
+		// Object.keys(m).each(function (key) {
+		// 	var elid = m.id + '-' + key;
+		// 	if ($(elid)) {
+		// 		switch (key){
+		// 			case "contextmenu":
+		// 				$(elid).oncontextmenu = function () { Monast.showMeetmeContextMenu(m.id); return false; };
+		// 				break;
 						
-					default:
-						$(elid).innerHTML = m[key];
-						break;
-				}
-			}
-		});
+		// 			default:
+		// 				$(elid).innerHTML = m[key];
+		// 				break;
+		// 		}
+		// 	}
+		// });
 		
 		if (!Object.isArray(m.users)){
 			var keys = Object.keys(m.users).sort();
@@ -1026,28 +1027,28 @@ var Monast = {
 			console.log($(meetme.id)); 
 		}
 	},
-	// _meetmeInviteNumbers: function (foo, m)
-	// {
-	// 	if (m == null)
-	// 	{
-	// 		var d = new Date();
-	// 		m     = {meetme: "Monast-" + parseInt(d.getTime() / 1000)};
-	// 	}
-	// 	Monast.doConfirm(
-	// 		new Template($("Template::Meetme::Form::InviteNumbers").innerHTML).evaluate(m),
-	// 		function () {
-	// 			new Ajax.Request('action.php', 
-	// 			{
-	// 				method: 'get',
-	// 				parameters: {
-	// 					reqTime: new Date().getTime(),
-	// 					action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, to: $('Meetme::Form::InviteNumbers::Meetme').value, type: 'meetmeInviteNumbers'})
-	// 				}
-	// 			});
-	// 		}
-	// 	);
-	// 	Monast.confirmDialog.setHeader('Invite Numbers to Meetme');
-	// },
+	_meetmeInviteNumbers: function (foo, m)
+	{
+		if (m == null)
+		{
+			var d = new Date();
+			m     = {meetme: "Monast-" + parseInt(d.getTime() / 1000)};
+		}
+		Monast.doConfirm(
+			new Template($("Template::Meetme::Form::InviteNumbers").innerHTML).evaluate(m),
+			function () {
+				new Ajax.Request('action.php', 
+				{
+					method: 'get',
+					parameters: {
+						reqTime: new Date().getTime(),
+						action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, to: $('Meetme::Form::InviteNumbers::Meetme').value, type: 'meetmeInviteNumbers'})
+					}
+				});
+			}
+		);
+		Monast.confirmDialog.setHeader('Invite Numbers to Meetme');
+	},
 	showMeetmeContextMenu: function (id)
 	{
 		this._contextMenu.clearContent();
