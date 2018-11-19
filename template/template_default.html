@@ -281,10 +281,10 @@
 
 <!-- Meetme -->
 <div class="hidden" id="Template::Meetme">
-  <div id="inviteNumber">
-      <p><button id="inviteNumberButton">Invite New Number</button></p>
+  <div  monast = "inviteNumber">
+      <p><button monast = "inviteNumberButton">Invite New Number</button></p>
   </div>
-  <div id="meetmeRoomUsers">Members in this room:
+  <div monast="memNumber">&nbsp;
   </div>
 </div>
 
@@ -292,9 +292,9 @@
 <div class="hidden" id="Template::Meetme::User">
   <table width='250'>
     <tr>
-      <td class='status'><span monast="calleridname">&nbsp;</span>:</td>
-      <!-- <td class='status'><span monast="calleridnum">&nbsp;</span></td> -->
-      <td class='status'><span monast="channel">&nbsp;</span></td>
+      <td class='status' width='100'><span monast="calleridname">&nbsp;</span>:</td>
+      <td class='status' width='100'><span monast="calleridnum">&nbsp;</span></td>
+      <td class='status' width='50'><button monast="removeid">Remove</button></td>
     </tr>
   </table>
 </div>
@@ -322,10 +322,10 @@
 </div>
 
 <!-- Meetme Form Invite Numbers -->
-<!-- <div style="display: none" id="Template::Meetme::Form::InviteNumbers">
+<div style="display: none" id="Template::Meetme::Form::InviteNumbers">
   <table class="tableInfo">
-    <tr>
-      <td class="key">Meetme:</td>
+    <!-- <tr>
+      <td class="key">Room Number:</td>
       <td>
         <input type="text" id="Meetme::Form::InviteNumbers::Meetme" value="#{meetme}">
       </td>
@@ -335,13 +335,13 @@
       <td>
         <span>if this meetme does not exists,<br>a dynamic one will be created</span>
       </td>
-    </tr>
+    </tr> -->
     <tr>
       <td class="key" valign="top">Numbers:<br>(one per line)</td>
-      <td><textarea id="Meetme::Form::InviteNumbers::Numbers" cols="20" rows="5"></textarea></td>
+      <td><textarea id="Meetme::Form::InviteNumbers::Numbers" cols="20" rows="7"></textarea></td>
     </tr>
   </table>
-</div> -->
+</div>
 
 <!-- Parked Call -->
 <div class="hidden" id="Template::ParkedCall">

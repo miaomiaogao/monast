@@ -258,16 +258,12 @@ foreach ($meets as $meet)
 			$template->assign('rooms',$room["roomname"]);;
 			$template->assign('count', count($room['users']));
 
-			// if(count($room['users']) > 0){
 			$template->newBlock('process');
 			$template->assign('json', str_replace("'", "\'", monast_json_encode(($room))));
-			// console_log(str_replace("'", "\'", monast_json_encode(($room))));
-			// }
 		}
 	}
 }
 
- 
 
 // Parked Calls
 foreach ($status[$server]['parkedCalls'] as $parked)
