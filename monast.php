@@ -167,7 +167,7 @@ sort($techs);
 foreach ($techs as $tech)
 {
 	$peers = $status[$server]['peers'][$tech];
-
+	
 	if (count($peers) > 0)
 	{
 		$template->newBlock('technology');
@@ -244,6 +244,9 @@ sort($meets );
 foreach ($meets as $meet)
 {
 	$members = $status[$server]['meetmes'][$meet];
+	//log 
+	console_log($members);
+
 	if (count($members) > 0)
 	{
 		$template->newBlock('roomtypes');

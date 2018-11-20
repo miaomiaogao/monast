@@ -104,9 +104,12 @@ BODY {
 	margin: 5px;
 }
 .meetmeDiv, .meetmeUser {
-	width: 250px;
-	border: 1px solid #aaaaaa;
-	margin-bottom: 2px;
+	float: left;
+	/*width: 250px;
+	border: 1px solid #aaaaaa;*/
+	margin-right: 6px;
+	margin-bottom: 3px;
+	margin-top: 3px;
 	background-color: #ffffff;
 	z-index: 1;
 }

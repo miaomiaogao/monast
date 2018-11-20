@@ -956,7 +956,7 @@ var Monast = {
 			clone.className = 'meetmeDivWrap';
 			 
 			console.log(clone);
-
+			
 			$('fieldset-' + m.roomtype + '-' + m.roomname).appendChild(clone);
 			
 		}
@@ -992,7 +992,7 @@ var Monast = {
 			var keys = Object.keys(m.users).sort();
 			keys.each(function (user) {
 				var user          = m.users[user];
-				user.id           = md5("meetmeUser-" + "::" + user.uniqueid);
+				user.id           = md5("meetmeUser-" + "::" + user.calleridnum + user.calleridname);
 				console.log(user.id);
 				user.userinfo     = (user.calleridnum && user.calleridname) ? new Template("#{calleridname} &lt;#{calleridnum}&gt;").evaluate(user) : user.channel;
 				
@@ -1016,7 +1016,7 @@ var Monast = {
 						}
 					}
 				});
-				$(user.id + '-' + 'removeid').on('click', function(){Monast.removeMeetmeUser(m, user); return false} );
+				//$(user.id + '-' + 'removeid').on('click', function(){Monast.removeMeetmeUser(m, user); return false} );
 			});
 			//$(m.id + "-countMeetme").innerHTML = keys.length;
 		}

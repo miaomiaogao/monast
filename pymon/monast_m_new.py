@@ -378,6 +378,8 @@ class MonastHTTP(resource.Resource):
 			for roomname, room in roomlist.items():
 				tmp[servername]['meetmes'][roomtype].append(room.__dict__)
 			tmp[servername]['meetmes'][roomtype].sort(lambda x, y: cmp(x.get('roomname'), y.get('roomname')))
+		print(time.strftime('%H:%M:%S'))
+		print(tmp[servername]['meetmes'])
 		## Parked Calls
 		for channel, parked in server.status.parkedCalls.items():
 			tmp[servername]['parkedCalls'].append(parked.__dict__)
@@ -568,6 +570,8 @@ class Monast:
 			'Bridge'              : self.handlerEventBridge,
 			'ConfbridgeJoin'          : self.handlerEventMeetmeJoin,
 			'ConfbridgeLeave'         : self.handlerEventMeetmeLeave,
+			'ConfbridgeListRooms': self.handlerConfbridgeListRooms,
+			'ConfbridgeList' 	: self.handlerConfbridgeList,
 			'ParkedCall'          : self.handlerEventParkedCall,
 			'UnParkedCall'        : self.handlerEventUnParkedCall,
 			'ParkedCallTimeOut'   : self.handlerEventParkedCallTimeOut,
@@ -966,9 +970,9 @@ class Monast:
 		if not server.status.meetmes.has_key(roomtype) and kw.get('forced', False):
 			log.warning("Server %s :: Adding a not implemented RoomType %s (forced in config file)", servername, roomtype)
 			server.status.meetmes[roomtype] = {}
-
 		if server.status.meetmes.has_key(roomtype):
 			meetme = server.status.meetmes[roomtype].get(roomname)
+
 			if not meetme:
 				meetme = GenericObject("Meetme")
 				meetme.roomtype = roomtype
@@ -978,17 +982,20 @@ class Monast:
 				meetme.users   = {}	
 				log.debug("Server %s :: create: %s/%s %s", servername, roomtype, roomname, _log)
 				server.status.meetmes[meetme.roomtype][meetme.roomname] = meetme
+
 				if dynamic:
 					self.http._addUpdate(servername = servername, **meetme.__dict__.copy())
 				if logging.DUMPOBJECTS:
 					log.debug("Object Dump:%s", meetme)
 			else:
 				log.warning("sServer %s :: Meetme already exists: %s/%s", servername, roomtype, roomname)
-
+		else:
+			log.debug('roomtype %s is not existed...' %roomtype)
 		return meetme
 			
 	def _updateMeetme(self, servername, **kw):
 		# meetmeroom = kw.get("meetme")
+		log.debug('Updating Meetmes...')
 		roomtype = kw.get('roomtype')
 		roomname = kw.get('roomname')
 		_log     = kw.get('_log', '')
@@ -996,12 +1003,8 @@ class Monast:
 			if not self.servers.get(servername).status.meetmes.has_key(roomtype):
 				log.warning("Server %s :: Adding a not implemented RoomType %s ", servername, roomtype)
 				self.servers.get(servername).status.meetmes[roomtype] = {}
-
-			if self.servers.get(servername).status.meetmes.has_key(roomtype):
-				# meetme = self.servers.get(servername).status.meetmes[roomtype].get(roomname)
+			else:
 				meetme = self.servers.get(servername).status.meetmes.get(roomtype, {}).get(roomname)
-				# get(channeltype, {}).get(peername)
-
 				if not meetme:
 					meetme = self._createMeetme(servername, roomtype = roomtype, roomname = roomname, dynamic = True, _log = "(dynamic)")
 
@@ -1009,15 +1012,18 @@ class Monast:
 			if user:
 				meetme.users[user.get('calleridnum')] = user
 				log.debug("Server %s :: Added user %s %s to %s %s", servername, user.get('calleridnum'), \
-														user.get('calleridname'), roomtype, roomname, _log)
-					
+														user.get('calleridname'), roomtype, roomname)
+
 			user = kw.get('removeUser')
 			if user:
-				u = meetme.users.get('calleridnum')
+				u = meetme.users.get(user['calleridnum'])
 				if u:
-					log.debug("Server %s :: Removed user %s from Meetme/Conference %s %s", servername, user.get('calleridnum'),\
-				 					 					user.get('calleridname'), roomtype, roomname, _log)
+					log.debug("Server %s :: Removed user %s %s from Meetme/Conference %s %s", servername, user.get('calleridnum'),\
+				 					 					user.get('calleridname'), roomtype, roomname)
 					del meetme.users[u.get('calleridnum')]
+				else:
+					print('no this user')
+
 						
 			self.http._addUpdate(servername = servername, **meetme.__dict__.copy())
 						
@@ -1026,7 +1032,9 @@ class Monast:
 			if logging.DUMPOBJECTS:
 				log.debug("Object Dump:%s", meetme)
 
-			print self.servers.get(servername)
+			# print self.servers.get(servername)
+
+
 
 		except:
 			log.exception("Server %s :: Unhandled exception updating : %s/%s", servername, roomtype, roomname)
@@ -1626,6 +1634,8 @@ class Monast:
 			.addCallback(server.ami.errorUnlessResponse) \
 			.addErrback(self._onAmiCommandFailure, servername, "Error Requesting SCCP Lines")
 
+		## List meeting rooms
+
 
 
 		# ## Peers IAX different behavior in asterisk 1.4
@@ -1713,7 +1723,12 @@ class Monast:
 		# log.debug("Server %s :: Requesting meetme.conf..." % servername)
 		# server.pushTask(server.ami.getConfig, 'meetme.conf') \
 		# 	.addCallbacks(onGetMeetmeConfig, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting meetme.conf"))
-		
+
+		log.debug("Server %s :: Requesting Meetme or Conference Rooms..." % servername)
+		server.pushTask(server.ami.sendDeferred, {'action' : 'ConfbridgeListRooms'}) \
+			.addCallback(server.ami.errorUnlessResponse) \
+			.addErrback(self._onAmiCommandFailure, servername, "Error Resquesting ConfbridgeRooms")
+
 		# Queues
 		def onQueueStatus(events):
 			log.debug("Server %s :: Processing Queues..." % servername)
@@ -2683,9 +2698,40 @@ class Monast:
 				# 'usernum'      : event.get("conference"), 
 				'calleridnum'  : event.get("calleridnum"), 
 				'calleridname' : event.get("calleridname"),
-			}  
+			}
 		)
-		
+	# Meetme list rooms
+	def handlerConfbridgeListRooms(self, ami, event):
+		log.debug("Server %s :: Processing Event ConfbridgeListRooms..." % ami.servername)
+		server = self.servers.get(ami.servername)
+		roomtype = 'CONFS'
+		roomname = event.get('conference')
+		if roomname:
+			if (self.displayMeetmesDefault and not server.displayMeetmes.has_key(roomname)) or (
+					not self.displayMeetmesDefault and server.displayMeetmes.has_key(roomname)):
+				log.debug('create conference room name is: ' + roomname)
+				self._createMeetme(servername = ami.servername, roomtype = roomtype, roomname = roomname, dynamic = True, _log = "(dynamic)")
+
+				log.debug(
+					"Server %s :: Requesting Members of conference room %s ..." % (ami.servername, roomname))
+				server.pushTask(ami.sendDeferred, {'action': 'ConfbridgeList', 'conference': roomname}) \
+					.addCallback(ami.errorUnlessResponse) \
+					.addErrback(self._onAmiCommandFailure, ami.servername, "Error Resquesting ConfbridgeRooms")
+
+	def handlerConfbridgeList(self, ami, event):
+		log.debug("Server %s :: Processing Event ConfbridgeList..." % ami.servername)
+		roomtype = 'CONFS';
+		roomname = event.get("conference")
+		self._updateMeetme(ami.servername, roomtype = roomtype, roomname = roomname,
+							   addUser={
+								   # 'uniqueid': event.get('uniqueid'),
+								   'usernum': event.get("calleridnum"),
+								   'channel': event.get('channel'),
+								   'calleridnum': event.get("calleridnum"),
+								   'calleridname': event.get("calleridname"),
+							   })
+
+
 	# Parked Calls Events
 	def handlerEventParkedCall(self, ami, event):
 		log.debug("Server %s :: Processing Event ParkedCall..." % ami.servername)
