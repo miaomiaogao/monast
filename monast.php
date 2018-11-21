@@ -244,27 +244,26 @@ sort($meets );
 foreach ($meets as $meet)
 {
 	$members = $status[$server]['meetmes'][$meet];
-	//log 
-	console_log($members);
+	// if (count($members) > 0)
+	// {
+	$template->newBlock('roomtypes');
+	$template->assign('roomtypes', $meet);
+	$template->assign('count', count($members));
 
-	if (count($members) > 0)
+	foreach ($members as $idx => $room)
 	{
-		$template->newBlock('roomtypes');
+		//{"roomtype":"CONFS","users":[],"forced":true,"dynamic":false,"roomname":"1902","objecttype":"Meetme"} (3)
+		$template->newBlock('meetrooms');
 		$template->assign('roomtypes', $meet);
-		$template->assign('count', count($members));
+		$template->assign('rooms',$room["roomname"]);;
+		$template->assign('count', count($room['users']));
 
-		foreach ($members as $idx => $room)
-		{
-			//{"roomtype":"CONFS","users":[],"forced":true,"dynamic":false,"roomname":"1902","objecttype":"Meetme"} (3)
-			$template->newBlock('meetrooms');
-			$template->assign('roomtypes', $meet);
-			$template->assign('rooms',$room["roomname"]);;
-			$template->assign('count', count($room['users']));
-
-			$template->newBlock('process');
-			$template->assign('json', str_replace("'", "\'", monast_json_encode(($room))));
-		}
+		$template->newBlock('process');
+		$template->assign('json', str_replace("'", "\'", monast_json_encode(($room))));
+		console_log("monast.php :: room ::");
+		console_log($room);
 	}
+	// }
 }
 
 

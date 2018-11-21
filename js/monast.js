@@ -946,18 +946,42 @@ var Monast = {
 	meetmes: new Hash(),
 	processMeetme: function (m)
 	{	
+		console.log('monast js :: meetme ::');
 		console.log(m);
+		
+		$('fieldset-' + m.roomtype + '-fieldset').style.display = 'block';
+		let innerText_num = parseInt($('fieldset-' + m.roomtype + '-fieldset').innerText.match(/\(([^)]+)\)/)[1]) + 1;
+		$('fieldset-' + m.roomtype + '-fieldset').select('legend a').innerText = m.roomtype + '(' + innerText_num + ')';
+		
 
-		m.id          = md5("meetme-" + m.roomtype + m.roomname + m.users.uniqueid);
+
+		
+		m.id          = md5("meetme-" + m.roomtype + m.roomname);
 		
 		if (Object.isUndefined(this.meetmes.get(m.id))) // Meetme does not exists
 		{
-			var clone       = Monast.buildClone("Template::Meetme", m.id);
+			var clone       = Monast.buildClone("Template::Meetme::Room", m.id);
 			clone.className = 'meetmeDivWrap';
 			 
+			console.log('monast.js :: clone ::');
 			console.log(clone);
 			
-			$('fieldset-' + m.roomtype + '-' + m.roomname).appendChild(clone);
+			if($('fieldset-' + m.roomtype + '-' + m.roomname)){
+				$('fieldset-' + m.roomtype + '-' + m.roomname).appendChild(clone);
+			}
+			else{
+				var id = md5('Template::Meetme' + m.roomtype + m.roomname);
+				var roomclone = Monast.buildClone("Template::Meetme", id);
+				$('fieldset-' + m.roomtype).appendChild(roomclone);
+				if(!Object.isArray(m.users)){
+					$('fieldset-' + m.roomtype).childNodes.innerText = m.roomname + '(' + Object.keys(m.users).length +')';
+				}
+				
+				$('fieldset-' + m.roomtype).childNodes.appendChild(clone);
+				//$('fieldset-' + m.roomtype).childNodes.onclick() = $('fieldset-' + m.roomtype + m.roomname).visible() ? $('fieldset-' + m.roomtype + m.roomname).hide() : $('fieldset-' + m.roomtype + m.roomname).show());
+				
+			}
+			
 			
 		}
 	
@@ -993,11 +1017,10 @@ var Monast = {
 			keys.each(function (user) {
 				var user          = m.users[user];
 				user.id           = md5("meetmeUser-" + "::" + user.calleridnum + user.calleridname);
-				console.log(user.id);
 				user.userinfo     = (user.calleridnum && user.calleridname) ? new Template("#{calleridname} &lt;#{calleridnum}&gt;").evaluate(user) : user.channel;
 				
 				if (!$(user.id)){
-					var clone       = Monast.buildClone("Template::Meetme::User", user.id);
+					var clone       = Monast.buildClone("Template::Meetme::Room::User", user.id);
 					clone.className = "meetmeUser";
 					clone.oncontextmenu = function () { Monast.showMeetmeUserContextMenu(m.id, user); return false; };
 					$(m.id).appendChild(clone);
@@ -1018,16 +1041,16 @@ var Monast = {
 				});
 				//$(user.id + '-' + 'removeid').on('click', function(){Monast.removeMeetmeUser(m, user); return false} );
 			});
-			//$(m.id + "-countMeetme").innerHTML = keys.length;
+		
 		}
-
+		
 		this.meetmes.set(m.id, m);
 
 	},
 	removeMeetmeUser: function (m, user)
 	{
 		console.log("here:");
-		var id     = md5("meetme-" + m.roomtype + m.roomname + m.users.uniqueid);
+		var id     = md5("meetme-" + m.roomtype + m.roomname);
 		var userid = md5("meetmeUser-" + "::" + user.uniqueid);
 		console.log('id:' + id);
 		console.log('userid:' + userid);
@@ -1062,7 +1085,6 @@ var Monast = {
 
 		Monast.doConfirm(
 			new Template($("Template::Meetme::Form::InviteNumbers").innerHTML).evaluate(m),
-			//console.log(test);
 			function () {
 				new Ajax.Request('action.php', 
 				{

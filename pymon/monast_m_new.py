@@ -255,6 +255,7 @@ class MonastHTTP(resource.Resource):
 		else:
 			for sessid, session in self.sessions.items():
 				session.updates.append(kw)
+		log.debug("sucessful update...")
 				
 	def _onRequestFailure(self, reason, request):
 		session = request.getSession()
@@ -1022,7 +1023,8 @@ class Monast:
 				 					 					user.get('calleridname'), roomtype, roomname)
 					del meetme.users[u.get('calleridnum')]
 				else:
-					print('no this user')
+					log.debug("Server %s :: User %s %s is not in Meetme/Conference %s %s", servername, user.get('calleridnum'),\
+				 					 					user.get('calleridname'), roomtype, roomname)
 
 						
 			self.http._addUpdate(servername = servername, **meetme.__dict__.copy())
@@ -1051,6 +1053,7 @@ class Monast:
 				# del server.status.meetmes.get(roomtype,{})[meetme]
 				del server.status.meetmes.get(roomtype,{})[roomname]
 				self.http._addUpdate(servername = servername, action = 'RemoveMeetme', meetme = meetme)
+
 				if logging.DUMPOBJECTS:
 					log.debug("Object Dump:%s", meetme)
 			else:
