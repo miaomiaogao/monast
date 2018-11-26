@@ -260,8 +260,7 @@ foreach ($meets as $meet)
 
 		$template->newBlock('process');
 		$template->assign('json', str_replace("'", "\'", monast_json_encode(($room))));
-		console_log("monast.php :: room ::");
-		console_log($room);
+
 	}
 	// }
 }

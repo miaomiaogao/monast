@@ -2097,6 +2097,9 @@ class Monast:
 			.addErrback(self._onAmiCommandFailure, servername, "Error Executting Queue Member Remove: %s -> %s" % (queue, location))
 			
 	def clientAction_MeetmeKick(self, session, action):
+		print('action:' );
+		print(sesson);
+		print(action);
 		servername = action['server'][0]
 		meetme     = action['meetme'][0]
 		usernum    = action['usernum'][0]

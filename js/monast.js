@@ -399,43 +399,43 @@ var Monast = {
 			}
 		}
 		
-		var inviteMeetme = function (p_sType, p_aArgs, p_oValue)
-		{
-			Monast.doConfirm(
-				"<div style='text-align: center'>Invite this User/Peer to Meetme \"" + p_oValue.meetme + "\"?</div><br>" + new Template($("Template::Userpeer::Info").innerHTML).evaluate(p_oValue.peer),
-				function () {
-					new Ajax.Request('action.php', 
-					{
-						method: 'get',
-						parameters: {
-							reqTime: new Date().getTime(),
-							action: Object.toJSON({action: 'Originate', from: p_oValue.peer.channel, to: p_oValue.meetme, callerid: p_oValue.peer.callerid, type: 'meetmeInviteUser'})
-						}
-					});
-				}
-			);
-			Monast.confirmDialog.setHeader('Meetme Invite');
-		};
-		var meetmeIdx  = 0;
-		var meetmeList = [];
-		Monast.meetmes.keys().each(function (id) {
-			var m = Monast.meetmes.get(id);
-			if (/^\d+$/.match(m.meetme))
-				meetmeList.push({text: m.meetme, onclick: {fn: inviteMeetme, obj: {peer: u, meetme: m.meetme}}});
-		});
-		if (meetmeList.length > 0)
-		{
-			m.push([{text: "Invite to", url: "#meetme", submenu: { id: "meetme", itemdata: meetmeList}}]);
-			meetmeIdx = queueIdx + 1;
-		}
+		// var inviteMeetme = function (p_sType, p_aArgs, p_oValue)
+		// {
+		// 	Monast.doConfirm(
+		// 		"<div style='text-align: center'>Invite this User/Peer to Meetme \"" + p_oValue.meetme + "\"?</div><br>" + new Template($("Template::Userpeer::Info").innerHTML).evaluate(p_oValue.peer),
+		// 		function () {
+		// 			new Ajax.Request('action.php', 
+		// 			{
+		// 				method: 'get',
+		// 				parameters: {
+		// 					reqTime: new Date().getTime(),
+		// 					action: Object.toJSON({action: 'Originate', from: p_oValue.peer.channel, to: p_oValue.meetme, callerid: p_oValue.peer.callerid, type: 'meetmeInviteUser'})
+		// 				}
+		// 			});
+		// 		}
+		// 	);
+		// 	Monast.confirmDialog.setHeader('Meetme Invite');
+		// };
+		// var meetmeIdx  = 0;
+		// var meetmeList = [];
+		// Monast.meetmes.keys().each(function (id) {
+		// 	var m = Monast.meetmes.get(id);
+		// 	if (/^\d+$/.match(m.meetme))
+		// 		meetmeList.push({text: m.meetme, onclick: {fn: inviteMeetme, obj: {peer: u, meetme: m.meetme}}});
+		// });
+		// if (meetmeList.length > 0)
+		// {
+		// 	m.push([{text: "Invite to", url: "#meetme", submenu: { id: "meetme", itemdata: meetmeList}}]);
+		// 	meetmeIdx = queueIdx + 1;
+		// }
 		
 		this._contextMenu.addItems(m);
 		this._contextMenu.setItemGroupTitle("User/Peer: " + u.channel, 0);
 		
 		if (queueIdx > 0)
 			this._contextMenu.setItemGroupTitle("Queues", queueIdx);
-		if (meetmeIdx > 0)
-			this._contextMenu.setItemGroupTitle("Meetme", meetmeIdx);
+		// if (meetmeIdx > 0)
+		// 	this._contextMenu.setItemGroupTitle("Meetme", meetmeIdx);
 		
 		this._contextMenu.render(document.body);
 		this._contextMenu.show();
@@ -941,20 +941,14 @@ var Monast = {
 			$("callsDiv").appendChild(bridge);
 		});
 	},
-	
+
 	// Meetmes
 	meetmes: new Hash(),
 	processMeetme: function (m)
 	{	
-		console.log('monast js :: meetme ::');
-		console.log(m);
-		
+
 		$('fieldset-' + m.roomtype + '-fieldset').style.display = 'block';
-		let innerText_num = parseInt($('fieldset-' + m.roomtype + '-fieldset').innerText.match(/\(([^)]+)\)/)[1]) + 1;
-		$('fieldset-' + m.roomtype + '-fieldset').select('legend a').innerText = m.roomtype + '(' + innerText_num + ')';
-		
-
-
+		var innerText_num = parseInt($('fieldset-' + m.roomtype + '-fieldset').innerText.match(/\(([^)]+)\)/)[1]);
 		
 		m.id          = md5("meetme-" + m.roomtype + m.roomname);
 		
@@ -963,25 +957,23 @@ var Monast = {
 			var clone       = Monast.buildClone("Template::Meetme::Room", m.id);
 			clone.className = 'meetmeDivWrap';
 			 
-			console.log('monast.js :: clone ::');
-			console.log(clone);
-			
 			if($('fieldset-' + m.roomtype + '-' + m.roomname)){
 				$('fieldset-' + m.roomtype + '-' + m.roomname).appendChild(clone);
 			}
 			else{
+				$('fieldset-' + m.roomtype + '-fieldset').select('legend a')[0].innerText = m.roomtype + '(' + ++innerText_num + ')';
 				var id = md5('Template::Meetme' + m.roomtype + m.roomname);
 				var roomclone = Monast.buildClone("Template::Meetme", id);
 				$('fieldset-' + m.roomtype).appendChild(roomclone);
+				roomclone.style.display = 'inherit';
+				roomclone.appendChild(clone);
+				clone.style.display = 'inherit';
 				if(!Object.isArray(m.users)){
-					$('fieldset-' + m.roomtype).childNodes.innerText = m.roomname + '(' + Object.keys(m.users).length +')';
+					roomclone.select('legend a')[0].innerText = m.roomname + '(' + Object.keys(m.users).length +')';
+					//roomclone.select('legend a')[0].onclick = clone.visible() ? clone.hide(): clone.show();
+					roomclone.select('legend a')[0].on('click', function(){$(m.id).visible() ? clone.hide(): clone.show()}); 
 				}
-				
-				$('fieldset-' + m.roomtype).childNodes.appendChild(clone);
-				//$('fieldset-' + m.roomtype).childNodes.onclick() = $('fieldset-' + m.roomtype + m.roomname).visible() ? $('fieldset-' + m.roomtype + m.roomname).hide() : $('fieldset-' + m.roomtype + m.roomname).show());
-				
 			}
-			
 			
 		}
 	
@@ -1047,15 +1039,15 @@ var Monast = {
 		this.meetmes.set(m.id, m);
 
 	},
-	removeMeetmeUser: function (m, user)
-	{
-		console.log("here:");
-		var id     = md5("meetme-" + m.roomtype + m.roomname);
-		var userid = md5("meetmeUser-" + "::" + user.uniqueid);
-		console.log('id:' + id);
-		console.log('userid:' + userid);
-		$(id).removeChild($(userid));
-	},
+	// removeMeetmeUser: function (m, user)
+	// {
+	// 	console.log("here:");
+	// 	var id     = md5("meetme-" + m.roomtype + m.roomname);
+	// 	var userid = md5("meetmeUser-" + "::" + user.uniqueid);
+	// 	console.log('id:' + id);
+	// 	console.log('userid:' + userid);
+	// 	$(id).removeChild($(userid));
+	// },
 
 	removeMeetme: function (m)  //to be continue....
 	{	
@@ -1673,7 +1665,7 @@ var Monast = {
 		
 		if (!Object.isUndefined(event.objecttype))
 		{
-			//console.log("ObjectType:", event.objecttype, event);
+			// console.log("ObjectType:", event.objecttype, event);
 			switch (event.objecttype)
 			{
 				case "User/Peer":
@@ -1716,7 +1708,7 @@ var Monast = {
 		
 		if (!Object.isUndefined(event.action))
 		{
-			// console.log("Action:", event.action, event);
+			console.log("Action:", event.action, event);
 			
 			switch (event.action)
 			{
