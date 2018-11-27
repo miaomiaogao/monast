@@ -255,6 +255,8 @@ class MonastHTTP(resource.Resource):
 		else:
 			for sessid, session in self.sessions.items():
 				session.updates.append(kw)
+		if session:
+			log.debug("_addUpdate: %s", session.updates)
 		log.debug("sucessful update...")
 				
 	def _onRequestFailure(self, reason, request):
@@ -285,6 +287,7 @@ class MonastHTTP(resource.Resource):
 			return "ERROR :: Authentication Required"
 		
 		handler = self.handlers.get(request.path)
+
 		if handler:
 			d = task.deferLater(reactor, 0.1, lambda: request)
 			d.addCallback(handler)
@@ -410,10 +413,14 @@ class MonastHTTP(resource.Resource):
 		session    = request.getSession()
 		servername = request.args.get('servername', [None])[0]
 		updates    = []
+
 		if len(session.updates) > 0:
 			updates         = [u for u in session.updates if u.get('servername') == servername]
+			# updates_meetme    = [u for u in session.updates if(u.get('servername') == servername and u.objecttype == 'Meetme')]
 			session.updates = []
 		if len(updates) > 0:
+			log.debug("gmm test : updates: %s" % json.dumps(updates, encoding = "ISO8859-1"))
+			# print(updates_meetme)
 			request.write(json.dumps(updates, encoding = "ISO8859-1"))
 		else:
 			request.write("NO UPDATES")
@@ -1026,7 +1033,7 @@ class Monast:
 					log.debug("Server %s :: User %s %s is not in Meetme/Conference %s %s", servername, user.get('calleridnum'),\
 				 					 					user.get('calleridname'), roomtype, roomname)
 
-						
+			log.debug("gmm test: _updateMeetme : %s ", meetme)
 			self.http._addUpdate(servername = servername, **meetme.__dict__.copy())
 						
 			if meetme.dynamic and len(meetme.users) == 0:
@@ -1052,7 +1059,9 @@ class Monast:
 				log.debug("Server %s :: %s remove: %s %s", servername, roomtype, roomname, _log)
 				# del server.status.meetmes.get(roomtype,{})[meetme]
 				del server.status.meetmes.get(roomtype,{})[roomname]
-				self.http._addUpdate(servername = servername, action = 'RemoveMeetme', meetme = meetme)
+				log.debug("gmm test : trying to removeMeetme : %s ", meetme)
+
+				self.http._addUpdate(servername = servername, action = 'RemoveMeetme', roomtype = roomtype, roomname=roomname)
 
 				if logging.DUMPOBJECTS:
 					log.debug("Object Dump:%s", meetme)

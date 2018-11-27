@@ -948,7 +948,7 @@ var Monast = {
 	{	
 
 		$('fieldset-' + m.roomtype + '-fieldset').style.display = 'block';
-		var innerText_num = parseInt($('fieldset-' + m.roomtype + '-fieldset').innerText.match(/\(([^)]+)\)/)[1]);
+		// let innerText_num = parseInt($('fieldset-' + m.roomtype + '-fieldset').select('legend a')[0].innerText.match(/\(([^)]+)\)/)[1]);
 		
 		m.id          = md5("meetme-" + m.roomtype + m.roomname);
 		
@@ -961,7 +961,7 @@ var Monast = {
 				$('fieldset-' + m.roomtype + '-' + m.roomname).appendChild(clone);
 			}
 			else{
-				$('fieldset-' + m.roomtype + '-fieldset').select('legend a')[0].innerText = m.roomtype + '(' + ++innerText_num + ')';
+				// $('fieldset-' + m.roomtype + '-fieldset').select('legend a')[0].innerText = m.roomtype + '(' + ++innerText_num + ')';
 				var id = md5('Template::Meetme' + m.roomtype + m.roomname);
 				var roomclone = Monast.buildClone("Template::Meetme", id);
 				$('fieldset-' + m.roomtype).appendChild(roomclone);
@@ -976,7 +976,9 @@ var Monast = {
 			}
 			
 		}
-	
+		// set conference numbers
+		let innerText_num = parseInt($('fieldset-' + m.roomtype).childElementCount);
+		$('fieldset-' + m.roomtype + '-fieldset').select('legend a')[0].innerText =m.roomtype + '(' + innerText_num + ')';
 		// Clear meetme users
 		$(m.id).select('[class="meetmeUser"]').each(function (el) { el.remove(); });
 
@@ -987,22 +989,6 @@ var Monast = {
 		//$(m.id + '-' + 'inviteNumberButton').on('click', function(){$(m.id + '-' + 'test').innerHTML = "helloclick2"; return false}); //test for left-click
 		//$(m.id + '-' + 'inviteNumberButton').on('click', function(){Monast.showMeetmeContextMenu(m.id); return false}); 
 		$(m.id + '-' + 'inviteNumberButton').on('click', function(){Monast._meetmeInviteNumbers(null, m); return false}); 
-		
-		
-		// Object.keys(m).each(function (key) {
-		// 	var elid = m.id + '-' + key;
-		// 	if ($(elid)) {
-		// 		switch (key){
-		// 			case "contextmenu":
-		// 				$(elid).oncontextmenu = function () { Monast.showMeetmeContextMenu(m.id); return false; };
-		// 				break;
-						
-		// 			default:
-		// 				$(elid).innerHTML = m[key];
-		// 				break;
-		// 		}
-		// 	}
-		// });
 		
 		if (!Object.isArray(m.users)){
 			var keys = Object.keys(m.users).sort();
@@ -1031,7 +1017,6 @@ var Monast = {
 						}
 					}
 				});
-				//$(user.id + '-' + 'removeid').on('click', function(){Monast.removeMeetmeUser(m, user); return false} );
 			});
 		
 		}
@@ -1042,8 +1027,8 @@ var Monast = {
 	// removeMeetmeUser: function (m, user)
 	// {
 	// 	console.log("here:");
-	// 	var id     = md5("meetme-" + m.roomtype + m.roomname);
-	// 	var userid = md5("meetmeUser-" + "::" + user.uniqueid);
+	// 	var userid     = md5("meetme-" + m.roomtype + m.roomname);
+	
 	// 	console.log('id:' + id);
 	// 	console.log('userid:' + userid);
 	// 	$(id).removeChild($(userid));
@@ -1052,10 +1037,20 @@ var Monast = {
 	removeMeetme: function (m)  //to be continue....
 	{	
 		console.log("wait");
-		// var id     = md5("meetme-" + m.roomtype + m.roomname + m.users.uniqueid);
-		// var userid = md5("meetmeUser-" + "::" + m.users.uniqueid);
-		// console.log('id:' + id);
-		// console.log('userid:' + userid);
+		var id = md5('Template::Meetme' + m.roomtype + m.roomname);
+		
+	//	if($('fieldset-' + m.roomtype).hasChildNodes($id)){
+		$('fieldset-' + m.roomtype).removeChild($id);	
+	//	}
+
+		if($('fieldset-' + m.roomtype).childElementCount == 0){
+			$('fieldset-' + m.roomtype + '-fieldset').style.display = 'none';
+		}else{
+			let innerText_num = parseInt($('fieldset-' + m.roomtype).childElementCount);
+			$('fieldset-' + m.roomtype).select('legend a')[0].innerText = m.roomtype + '(' + innerText_num + ')';
+		}
+		
+		
 		// var meetme = this.meetmes.unset(id);
 		// console.log(meetme);
 		// if (!Object.isUndefined(meetme))
