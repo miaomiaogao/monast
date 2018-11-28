@@ -949,44 +949,36 @@ var Monast = {
 
 		$('fieldset-' + m.roomtype + '-fieldset').style.display = 'block';
 		// let innerText_num = parseInt($('fieldset-' + m.roomtype + '-fieldset').select('legend a')[0].innerText.match(/\(([^)]+)\)/)[1]);
-		
+		var roomid = 'fieldset-' + m.roomtype + '-' + m.roomname;
 		m.id          = md5("meetme-" + m.roomtype + m.roomname);
-		
-		if (Object.isUndefined(this.meetmes.get(m.id))) // Meetme does not exists
+		if (Object.isUndefined(this.meetmes.get(roomid))) // Meetme does not exists
 		{
+			var roomclone = Monast.buildClone("Template::Meetme", roomid);
+			roomclone.style.display = 'inherit';
+			
 			var clone       = Monast.buildClone("Template::Meetme::Room", m.id);
 			clone.className = 'meetmeDivWrap';
-			 
-			if($('fieldset-' + m.roomtype + '-' + m.roomname)){
-				$('fieldset-' + m.roomtype + '-' + m.roomname).appendChild(clone);
-			}
-			else{
-				// $('fieldset-' + m.roomtype + '-fieldset').select('legend a')[0].innerText = m.roomtype + '(' + ++innerText_num + ')';
-				var id = md5('Template::Meetme' + m.roomtype + m.roomname);
-				var roomclone = Monast.buildClone("Template::Meetme", id);
-				$('fieldset-' + m.roomtype).appendChild(roomclone);
-				roomclone.style.display = 'inherit';
-				roomclone.appendChild(clone);
-				clone.style.display = 'inherit';
-				if(!Object.isArray(m.users)){
-					roomclone.select('legend a')[0].innerText = m.roomname + '(' + Object.keys(m.users).length +')';
-					//roomclone.select('legend a')[0].onclick = clone.visible() ? clone.hide(): clone.show();
-					roomclone.select('legend a')[0].on('click', function(){$(m.id).visible() ? clone.hide(): clone.show()}); 
-				}
-			}
+			clone.style.display = 'inherit';
+
+			$('fieldset-' + m.roomtype).appendChild(roomclone);
+			roomclone.appendChild(clone);
 			
+			if(!Object.isArray(m.users)){
+				// roomclone.select('legend a')[0].innerText = m.roomname + '(' + Object.keys(m.users).length +')';
+				roomclone.select('legend a')[0].on('click', function(){$(m.id).visible() ? clone.hide(): clone.show()}); 
+			}
 		}
-		// set conference numbers
-		let innerText_num = parseInt($('fieldset-' + m.roomtype).childElementCount);
+		
+		// Set conference room numbers
+		let innerText_num = $('fieldset-' + m.roomtype).childElementCount;
 		$('fieldset-' + m.roomtype + '-fieldset').select('legend a')[0].innerText =m.roomtype + '(' + innerText_num + ')';
+		// Set room user numbers
+		$(roomid).select('legend a')[0].innerText = m.roomname + '(' + Object.keys(m.users).length +')';
 		// Clear meetme users
 		$(m.id).select('[class="meetmeUser"]').each(function (el) { el.remove(); });
-
 		// Show member hint
 		$(m.id + '-' + 'memNumber').innerHTML = !Object.isArray(m.users) ? "Members in this room are:" :"No members in this room." ;
-		
-		//$(m.id + '-' + 'inviteNumberButton').oncontextmenu = function(){$(m.id + '-' + 'test').innerHTML = "helloclick"; return false}; //test for right-click
-		//$(m.id + '-' + 'inviteNumberButton').on('click', function(){$(m.id + '-' + 'test').innerHTML = "helloclick2"; return false}); //test for left-click
+		// Invite new numbers
 		//$(m.id + '-' + 'inviteNumberButton').on('click', function(){Monast.showMeetmeContextMenu(m.id); return false}); 
 		$(m.id + '-' + 'inviteNumberButton').on('click', function(){Monast._meetmeInviteNumbers(null, m); return false}); 
 		
@@ -1000,11 +992,9 @@ var Monast = {
 				if (!$(user.id)){
 					var clone       = Monast.buildClone("Template::Meetme::Room::User", user.id);
 					clone.className = "meetmeUser";
-					clone.oncontextmenu = function () { Monast.showMeetmeUserContextMenu(m.id, user); return false; };
+					clone.oncontextmenu = function () { Monast.showMeetmeUserContextMenu(roomid, user); return false; };
 					$(m.id).appendChild(clone);
-			
 				}
-				
 				Object.keys(user).each(function (key) {
 					var elid = user.id + '-' + key;
 					if ($(elid))
@@ -1018,49 +1008,29 @@ var Monast = {
 					}
 				});
 			});
-		
 		}
 		
-		this.meetmes.set(m.id, m);
+		this.meetmes.set(roomid, m);
 
 	},
-	// removeMeetmeUser: function (m, user)
-	// {
-	// 	console.log("here:");
-	// 	var userid     = md5("meetme-" + m.roomtype + m.roomname);
-	
-	// 	console.log('id:' + id);
-	// 	console.log('userid:' + userid);
-	// 	$(id).removeChild($(userid));
-	// },
 
 	removeMeetme: function (m)  //to be continue....
 	{	
-		console.log("wait");
-		var id = md5('Template::Meetme' + m.roomtype + m.roomname);
+		var roomid = 'fieldset-' + m.roomtype + '-' + m.roomname;
 		
-	//	if($('fieldset-' + m.roomtype).hasChildNodes($id)){
-		$('fieldset-' + m.roomtype).removeChild($id);	
-	//	}
+		if (!Object.isUndefined(this.meetmes.get(roomid))) // Meetme does exists
+		{
+			this.meetmes.unset(roomid);
+		}
+		$('fieldset-' + m.roomtype).removeChild($(roomid));	
 
 		if($('fieldset-' + m.roomtype).childElementCount == 0){
 			$('fieldset-' + m.roomtype + '-fieldset').style.display = 'none';
 		}else{
-			let innerText_num = parseInt($('fieldset-' + m.roomtype).childElementCount);
-			$('fieldset-' + m.roomtype).select('legend a')[0].innerText = m.roomtype + '(' + innerText_num + ')';
+			let innerText_num = $('fieldset-' + m.roomtype).childElementCount;
+			$('fieldset-' + m.roomtype + '-fieldset').select('legend a')[0].innerText = m.roomtype + '(' + innerText_num + ')';
 		}
-		
-		
-		// var meetme = this.meetmes.unset(id);
-		// console.log(meetme);
-		// if (!Object.isUndefined(meetme))
-		// {
-		// 	console.log('hey, i\'m here');
-		// 	console.log(id);
-		// 	console.log(userid);
-		// 	$(id).removeChild($(userid));
-			
-		// }
+
 	},
 	_meetmeInviteNumbers: function (foo, m)  //to be continue for inviting members
 	{
@@ -1069,7 +1039,7 @@ var Monast = {
 		// 	var d = new Date();
 		// 	m     = {meetme: "Monast-" + parseInt(d.getTime() / 1000)};
 		// }
-
+		console.log("here:");
 		Monast.doConfirm(
 			new Template($("Template::Meetme::Form::InviteNumbers").innerHTML).evaluate(m),
 			function () {
@@ -1078,7 +1048,8 @@ var Monast = {
 					method: 'get',
 					parameters: {
 						reqTime: new Date().getTime(),
-						action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, to: $('Meetme::Form::InviteNumbers::Meetme').value, type: 'meetmeInviteNumbers'})
+						// action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, to: $('Meetme::Form::InviteNumbers::Meetme').value, type: 'meetmeInviteNumbers'})
+						action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, to: m.roomname, type: 'meetmeInviteNumbers'})
 					}
 				});
 			}
@@ -1119,14 +1090,14 @@ var Monast = {
 		var kickUser = function (p_sType, p_aArgs, p_oValue)
 		{
 			Monast.doConfirm(
-				"<div style='text-align: center'>Request Kick to this User from Room \"" + p_oValue.meetme + "\"?</div><br>" + new Template($("Template::Meetme::User::Info").innerHTML).evaluate(p_oValue.user),
+				"<div style='text-align: center'>Request Kick this User from Room \"" + p_oValue.meetme + "\"?</div><br>" + new Template($("Template::Meetme::User::Info").innerHTML).evaluate(p_oValue.user),
 				function () {
 					new Ajax.Request('action.php', 
 					{
 						method: 'get',
 						parameters: {
 							reqTime: new Date().getTime(),
-							action: Object.toJSON({action: 'MeetmeKick', meetme: p_oValue.roomname, usernum: p_oValue.user.calleridname})
+							action: Object.toJSON({action: 'MeetmeKick', roomtype: p_oValue.roomtype, roomname: p_oValue.roomname, usernum: p_oValue.user.calleridname})
 						}
 					});
 				}
@@ -1135,8 +1106,8 @@ var Monast = {
 		
 		var meetme = this.meetmes.get(id);
 		var m = [
-			[
-				{text: "Kick User", onclick: {fn: kickUser, obj: {meetme: meetme.roomname, user: user}}},
+			[ 
+				{text: "Kick User", onclick: {fn: kickUser, obj: {roomtype: meetme.roomtype, roomname: meetme.roomname, user: user}}},
 				{text: "View User Info", onclick: {fn: viewUserInfo, obj: user}}
 			]
 		];
@@ -1703,7 +1674,7 @@ var Monast = {
 		
 		if (!Object.isUndefined(event.action))
 		{
-			console.log("Action:", event.action, event);
+			//console.log("Action:", event.action, event);
 			
 			switch (event.action)
 			{

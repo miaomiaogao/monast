@@ -259,7 +259,8 @@ foreach ($meets as $meet)
 		$template->assign('count', count($room['users']));
 
 		$template->newBlock('process');
-		$template->assign('json', str_replace("'", "\'", monast_json_encode(($room))));
+		// $template->assign('json', str_replace(".", "\.", monast_json_encode(($room))));
+		$template->assign('json', monast_json_encode(($room)));
 
 	}
 	// }

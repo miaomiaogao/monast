@@ -2107,17 +2107,22 @@ class Monast:
 			
 	def clientAction_MeetmeKick(self, session, action):
 		print('action:' );
-		print(sesson);
 		print(action);
 		servername = action['server'][0]
-		meetme     = action['meetme'][0]
+		roomtype   = action['roomtype'][0]
+		roomname   = action['roomname'][0]
 		usernum    = action['usernum'][0]
 		
-		log.info("Server %s :: Executting Client Action Meetme Kick: %s -> %s..." % (servername, meetme, usernum))
+		log.debug("Server %s :: Executting Client Action Meetme Kick: %s %s -> %s..." % (servername,roomtype, roomname, usernum))
 		server = self.servers.get(servername)
-		server.pushTask(server.ami.command, "meetme kick %s %s" % (meetme, usernum)) \
-			.addErrback(self._onAmiCommandFailure, servername, "Error Executting Client Action Meetme Kick: %s -> %s..." % (meetme, usernum))
+		# server.pushTask(server.ami.command, "ConfbridgeKick %s %s" % (roomname, usernum)) \
+		# 	.addErrback(self._onAmiCommandFailure, servername, "Error Executting Client Action Meetme Kick: %s -> %s..." % (meetme, usernum))
 
+		server.pushTask(server.ami.sendDeferred, {'action': 'ConfbridgeKick', 'conference': roomname, 'Channel': 'all'}) \
+		.addCallback(server.ami.errorUnlessResponse) \
+		.addErrback(self._onAmiCommandFailure, servername, "Error Requesting Conference %s kick user %s", (roomname , usernum))
+
+		log.debug("successful or failed?")
 	# def clientAction_ConfbridgeKick(self, session, action):
 	# 	servername = action['server'][0]
 	# 	meetme     = action['meetme'][0]
@@ -2680,7 +2685,7 @@ class Monast:
 			addUser = {
 				'uniqueid'     : event.get('uniqueid'), 
 				'channel'      : event.get('channel'),
-				# 'usernum'      : event.get("conference"), 
+				'usernum'      : event.get("calleridnum"),
 				'calleridnum'  : event.get("calleridnum"), 
 				'calleridname' : event.get("calleridname"),
 			}  
@@ -2739,7 +2744,7 @@ class Monast:
 		roomname = event.get("conference")
 		self._updateMeetme(ami.servername, roomtype = roomtype, roomname = roomname,
 							   addUser={
-								   # 'uniqueid': event.get('uniqueid'),
+								   'uniqueid': event.get('uniqueid'), #there is no uniqueid in this command
 								   'usernum': event.get("calleridnum"),
 								   'channel': event.get('channel'),
 								   'calleridnum': event.get("calleridnum"),
