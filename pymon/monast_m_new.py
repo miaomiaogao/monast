@@ -614,7 +614,6 @@ class Monast:
 			'QueueMemberAdd'     : ('queue', self.clientAction_QueueMemberAdd),
 			'QueueMemberRemove'  : ('queue', self.clientAction_QueueMemberRemove),
 			'MeetmeKick'         : ('originate', self.clientAction_MeetmeKick),
-			# 'ConfbridgeKick'     : ('originate', self.clientAction_ConfbridgeKick),
 			'SpyChannel'         : ('spy', self.clientAction_SpyChannel),
 		}
 		
@@ -1905,11 +1904,12 @@ class Monast:
 	def clientAction_Originate(self, session, action):
 		servername  = action['server'][0]
 		source      = action['from'][0]
-		destination = action['to'][0] 
+		destination = action['to'][0]
+
 		type        = action['type'][0]
 		server      = self.servers.get(servername)
-		
-		channel     = source
+
+		channel     = destination
 		context     = server.default_context
 		exten       = None
 		priority    = None
@@ -1928,17 +1928,17 @@ class Monast:
 			application = "Dial"
 			data        = "%s,30,rTt" % destination
 			originates.append((channel, context, exten, priority, timeout, callerid, account, application, data, variable, async))
-			logs.append("from %s to %s" % (channel, destination))
+			logs.append("from %s to %s" % (source, destination))
 
 		if type == "dial":
 			tech, peer = source.split('/')
 			peer       = server.status.peers.get(tech).get(peer)
 			context    = peer.context
-			exten      = destination
+			exten      = 'asterisk' #destination
 			priority   = 1
 			variable   = dict([i.split('=', 1) for i in peer.variables])
 			originates.append((channel, context, exten, priority, timeout, callerid, account, application, data, variable, async))
-			logs.append("from %s to %s@%s" % (channel, exten, context))
+			logs.append("from %s to %s@%s" % (source, destination, context))
 		
 		if type == "meetmeInviteUser":
 			application = "Meetme"
@@ -1947,12 +1947,14 @@ class Monast:
 			logs.append("Invite from %s to %s(%s)" % (channel, application, data))
 		
 		if type == "meetmeInviteNumbers":
-			dynamic     = not server.status.meetmes.has_key(destination)
-			application = "Meetme"
+			roomtype = action['roomtype'][0]
+			dynamic     = not server.status.meetmes[roomtype].has_key(destination)
+			# application = "MeetMe"
+			application = "ConfBridge"
 			data        = "%s%sd" % (destination, [",", "|"][server.version == 1.4])
 			numbers     = source.replace('\r', '').split('\n')
 			for number in [i.strip() for i in numbers if i.strip()]:
-				channel     = "Local/%s@%s" % (number, context)
+				channel     = number #"Local/%s@%s" % (number, context)
 				callerid    = "MonAst Invited <%s>" % (number)
 				originates.append((channel, context, exten, priority, timeout, callerid, account, application, data, variable, async))
 				logs.append("Invite from %s to %s(%s)" % (channel, application, data))
@@ -2111,27 +2113,19 @@ class Monast:
 		servername = action['server'][0]
 		roomtype   = action['roomtype'][0]
 		roomname   = action['roomname'][0]
-		usernum    = action['usernum'][0]
+		username    = action['username'][0]
+		channel		= action['channel'][0]
 		
-		log.debug("Server %s :: Executting Client Action Meetme Kick: %s %s -> %s..." % (servername,roomtype, roomname, usernum))
+		log.debug("Server %s :: Executting Client Action Meetme Kick: %s %s -> %s..." % (servername,roomtype, roomname, username))
 		server = self.servers.get(servername)
 		# server.pushTask(server.ami.command, "ConfbridgeKick %s %s" % (roomname, usernum)) \
 		# 	.addErrback(self._onAmiCommandFailure, servername, "Error Executting Client Action Meetme Kick: %s -> %s..." % (meetme, usernum))
 
-		server.pushTask(server.ami.sendDeferred, {'action': 'ConfbridgeKick', 'conference': roomname, 'Channel': 'all'}) \
+		server.pushTask(server.ami.sendDeferred, {'action': 'ConfbridgeKick', 'conference': roomname, 'channel': channel}) \
 		.addCallback(server.ami.errorUnlessResponse) \
-		.addErrback(self._onAmiCommandFailure, servername, "Error Requesting Conference %s kick user %s", (roomname , usernum))
+		.addErrback(self._onAmiCommandFailure, servername, "Error Requesting Conference %s kick user %s", (roomname , username))
 
-		log.debug("successful or failed?")
-	# def clientAction_ConfbridgeKick(self, session, action):
-	# 	servername = action['server'][0]
-	# 	meetme     = action['meetme'][0]
-	# 	usernum    = action['usernum'][0]
-		
-	# 	log.info("Server %s :: Executting Client Action Conference Kick: %s -> %s..." % (servername, meetme, usernum))
-	# 	server = self.servers.get(servername)
-	# 	server.pushTask(server.ami.command, "meetme kick %s %s" % (meetme, usernum)) \
-	# 		.addErrback(self._onAmiCommandFailure, servername, "Error Executting Client Action Meetme Kick: %s -> %s..." % (meetme, usernum))
+
 
 	def clientAction_SpyChannel(self, session, action):
 		servername = action['server'][0]

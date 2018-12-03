@@ -22,6 +22,10 @@
       <td>#{channeltype}</td>
     </tr>
     <tr>
+      <td class ="key">Channel Name:</td>
+      <td>#{channel}</td>
+    </tr>
+    <tr>
       <td class="key">Peer Name:</td>
       <td>#{peername}</td>
     </tr>
@@ -335,7 +339,7 @@
 <!-- Meetme Form Invite Numbers -->
 <div style="display: none" id="Template::Meetme::Form::InviteNumbers">
   <table class="tableInfo">
-    <!-- <tr>
+    <tr>
       <td class="key">Room Number:</td>
       <td>
         <input type="text" id="Meetme::Form::InviteNumbers::Meetme" value="#{meetme}">
@@ -346,9 +350,9 @@
       <td>
         <span>if this meetme does not exists,<br>a dynamic one will be created</span>
       </td>
-    </tr> -->
+    </tr> 
     <tr>
-      <td class="key" valign="top">Numbers:<br>(one per line)</td>
+      <td class="key" valign="top">Channels:<br>(one per line)</td>
       <td><textarea id="Meetme::Form::InviteNumbers::Numbers" cols="20" rows="7"></textarea></td>
     </tr>
   </table>

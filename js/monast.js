@@ -355,7 +355,11 @@ var Monast = {
 				m[0].push({text: "Execute 'sip show peer " + u.peername + "'", onclick: {fn: Monast.requestInfo, obj: "sip show peer " + u.peername}});
 				addQueue = true;
 				break;
-				
+			
+			case 'SCCP':
+				m[0].push({text: "Execute 'sccp show line " + u.peername + "'", onclick: {fn: Monast.requestInfo, obj: "sccp show line " + u.peername}});
+				addQueue = true;
+				break;
 			case 'IAX2':
 				m[0].push({text: "Execute 'iax2 show peer " + u.peername + "'", onclick: {fn: Monast.requestInfo, obj: "iax2 show peer " + u.peername}});
 				addQueue = true;
@@ -399,35 +403,35 @@ var Monast = {
 			}
 		}
 		
-		// var inviteMeetme = function (p_sType, p_aArgs, p_oValue)
-		// {
-		// 	Monast.doConfirm(
-		// 		"<div style='text-align: center'>Invite this User/Peer to Meetme \"" + p_oValue.meetme + "\"?</div><br>" + new Template($("Template::Userpeer::Info").innerHTML).evaluate(p_oValue.peer),
-		// 		function () {
-		// 			new Ajax.Request('action.php', 
-		// 			{
-		// 				method: 'get',
-		// 				parameters: {
-		// 					reqTime: new Date().getTime(),
-		// 					action: Object.toJSON({action: 'Originate', from: p_oValue.peer.channel, to: p_oValue.meetme, callerid: p_oValue.peer.callerid, type: 'meetmeInviteUser'})
-		// 				}
-		// 			});
-		// 		}
-		// 	);
-		// 	Monast.confirmDialog.setHeader('Meetme Invite');
-		// };
-		// var meetmeIdx  = 0;
-		// var meetmeList = [];
-		// Monast.meetmes.keys().each(function (id) {
-		// 	var m = Monast.meetmes.get(id);
-		// 	if (/^\d+$/.match(m.meetme))
-		// 		meetmeList.push({text: m.meetme, onclick: {fn: inviteMeetme, obj: {peer: u, meetme: m.meetme}}});
-		// });
-		// if (meetmeList.length > 0)
-		// {
-		// 	m.push([{text: "Invite to", url: "#meetme", submenu: { id: "meetme", itemdata: meetmeList}}]);
-		// 	meetmeIdx = queueIdx + 1;
-		// }
+		var inviteMeetme = function (p_sType, p_aArgs, p_oValue)
+		{
+			Monast.doConfirm(
+				"<div style='text-align: center'>Invite this User/Peer to Meetme \"" + p_oValue.meetme + "\"?</div><br>" + new Template($("Template::Userpeer::Info").innerHTML).evaluate(p_oValue.peer),
+				function () {
+					new Ajax.Request('action.php', 
+					{
+						method: 'get',
+						parameters: {
+							reqTime: new Date().getTime(),
+							action: Object.toJSON({action: 'Originate', from: p_oValue.peer.channel, to: p_oValue.meetme, callerid: p_oValue.peer.callerid, type: 'meetmeInviteUser'})
+						}
+					});
+				}
+			);
+			Monast.confirmDialog.setHeader('Meetme Invite');
+		};
+		var meetmeIdx  = 0;
+		var meetmeList = [];
+		Monast.meetmes.keys().each(function (id) {
+			var m = Monast.meetmes.get(id);
+			if (/^\d+$/.match(m.meetme))
+				meetmeList.push({text: m.meetme, onclick: {fn: inviteMeetme, obj: {peer: u, meetme: m.meetme}}});
+		});
+		if (meetmeList.length > 0)
+		{
+			m.push([{text: "Invite to", url: "#meetme", submenu: { id: "meetme", itemdata: meetmeList}}]);
+			meetmeIdx = queueIdx + 1;
+		}
 		
 		this._contextMenu.addItems(m);
 		this._contextMenu.setItemGroupTitle("User/Peer: " + u.channel, 0);
@@ -1048,13 +1052,14 @@ var Monast = {
 					method: 'get',
 					parameters: {
 						reqTime: new Date().getTime(),
-						// action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, to: $('Meetme::Form::InviteNumbers::Meetme').value, type: 'meetmeInviteNumbers'})
-						action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, to: m.roomname, type: 'meetmeInviteNumbers'})
+						action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, 
+								 to: $('Meetme::Form::InviteNumbers::Meetme').value, roomtype:'CONFS',
+								 type: 'meetmeInviteNumbers'})
 					}
 				});
 			}
 		);
-		Monast.confirmDialog.setHeader('Invite Numbers to Room(' + m.roomname + ')');
+		Monast.confirmDialog.setHeader('Invite Numbers');
 	},
 	// showMeetmeContextMenu: function (id)
 	// {
@@ -1097,7 +1102,7 @@ var Monast = {
 						method: 'get',
 						parameters: {
 							reqTime: new Date().getTime(),
-							action: Object.toJSON({action: 'MeetmeKick', roomtype: p_oValue.roomtype, roomname: p_oValue.roomname, usernum: p_oValue.user.calleridname})
+							action: Object.toJSON({action: 'MeetmeKick', roomtype: p_oValue.roomtype, roomname: p_oValue.roomname, username: p_oValue.user.calleridname, channel:p_oValue.user.channel })
 						}
 					});
 				}
