@@ -576,10 +576,11 @@ class Monast:
 			'Link'                : self.handlerEventLink,
 			'Unlink'              : self.handlerEventUnlink,
 			'Bridge'              : self.handlerEventBridge,
-			'ConfbridgeJoin'          : self.handlerEventMeetmeJoin,
-			'ConfbridgeLeave'         : self.handlerEventMeetmeLeave,
-			'ConfbridgeListRooms': self.handlerConfbridgeListRooms,
-			'ConfbridgeList' 	: self.handlerConfbridgeList,
+			'ConfbridgeJoin'      : self.handlerEventMeetmeJoin,
+			'ConfbridgeLeave'     : self.handlerEventMeetmeLeave,
+			'ConfbridgeListRooms' : self.handlerConfbridgeListRooms,
+			'ConfbridgeList' 	  : self.handlerConfbridgeList,
+			'OriginateResponse'	  : self.handlerOriginateResponse,
 			'ParkedCall'          : self.handlerEventParkedCall,
 			'UnParkedCall'        : self.handlerEventUnParkedCall,
 			'ParkedCallTimeOut'   : self.handlerEventParkedCallTimeOut,
@@ -1842,14 +1843,6 @@ class Monast:
 			log.debug("Server %s :: End of channels status..." % servername)
 
 
-			# print 'server: \n', server
-			# time.sleep(30)
-			# print ("exit testing here....")
-			# os._exit(0)
-
-
-
-
 		server.pushTask(server.ami.status) \
 			.addCallbacks(onStatusComplete, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting Channels Status"))
 		
@@ -1909,7 +1902,7 @@ class Monast:
 		type        = action['type'][0]
 		server      = self.servers.get(servername)
 
-		channel     = destination
+		channel     = source
 		context     = server.default_context
 		exten       = None
 		priority    = None
@@ -1934,7 +1927,7 @@ class Monast:
 			tech, peer = source.split('/')
 			peer       = server.status.peers.get(tech).get(peer)
 			context    = peer.context
-			exten      = 'asterisk' #destination
+			exten      = destination
 			priority   = 1
 			variable   = dict([i.split('=', 1) for i in peer.variables])
 			originates.append((channel, context, exten, priority, timeout, callerid, account, application, data, variable, async))
@@ -1949,7 +1942,7 @@ class Monast:
 		if type == "meetmeInviteNumbers":
 			roomtype = action['roomtype'][0]
 			dynamic     = not server.status.meetmes[roomtype].has_key(destination)
-			# application = "MeetMe"
+			#application = "MeetMe"
 			application = "ConfBridge"
 			data        = "%s%sd" % (destination, [",", "|"][server.version == 1.4])
 			numbers     = source.replace('\r', '').split('\n')
@@ -2745,6 +2738,30 @@ class Monast:
 								   'calleridname': event.get("calleridname"),
 							   })
 
+	# Originate response
+	def handlerOriginateResponse(self, ami, event):
+		log.debug("Server %s :: Processing Event OriginateResponse..." % ami.servername)
+		# application = event.get("application")
+		# if application != "MeetMe" and application != "ConfBridge" :
+		# 	log.debug("Server %s :: This application is not in use..." % (ami.servername, application))
+		# else:
+		# 	roomname = event.get('data').split(',')[0]
+		# 	if application == "MeetMe":
+		# 		roomtype = 'MEETMES'
+		# 	else:
+		# 		roomtype = 'CONFS'
+		# 	self._updateMeetme(
+		# 		ami.servername,
+		# 		roomtype=roomtype,
+		# 		roomname=roomname,
+		# 		addUser={
+		# 			'uniqueid': event.get('uniqueid'),
+		# 			'channel': event.get('channel'),
+		# 			'usernum': event.get("calleridnum"),
+		# 			'calleridnum': event.get("calleridnum"),
+		# 			'calleridname': event.get("calleridname"),
+		# 		}
+		# 	)
 
 	# Parked Calls Events
 	def handlerEventParkedCall(self, ami, event):
