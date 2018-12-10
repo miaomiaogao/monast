@@ -1646,96 +1646,93 @@ class Monast:
 			.addCallback(server.ami.errorUnlessResponse) \
 			.addErrback(self._onAmiCommandFailure, servername, "Error Requesting SCCP Lines")
 
+		## Peers IAX different behavior in asterisk 1.4
+		if server.version == 1.4:
+			def onIax2ShowPeers(result):
+				if len(result) > 2:
+					for line in result[1:][:-1]:
+						peername = line.split(' ', 1)[0].split('/', 1)[0]
+						self.handlerEventPeerEntry(server.ami, {'channeltype': 'IAX2', 'objectname': peername, 'status': 'Unknown'})
+			log.debug("Server %s :: Requesting IAX Peers (via iax2 show peers)..." % servername)
+			server.pushTask(server.ami.command, 'iax2 show peers') \
+				.addCallbacks(onIax2ShowPeers, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting IAX Peers (via iax2 show peers)"))
+		else:
+			log.debug("Server %s :: Requesting IAX Peers..." % servername)
+			server.pushTask(server.ami.sendDeferred, {'action': 'iaxpeers'}) \
+				.addCallback(server.ami.errorUnlessResponse) \
+				.addErrback(self._onAmiCommandFailure, servername, "Error Requesting IAX Peers")
+
+		# DAHDI
+		def onDahdiShowChannels(events):
+			log.debug("Server %s :: Processing DAHDI Channels..." % servername)
+			for event in events:
+				user = "DAHDI/%s" % event.get('dahdichannel')
+				if (self.displayUsersDefault and not server.displayUsers.has_key(user)) or (not self.displayUsersDefault and server.displayUsers.has_key(user)):
+					self._createPeer(
+						servername,
+						channeltype = 'DAHDI',
+						peername    = event.get('dahdichannel', event.get('channel')),
+						context     = event.get('context'),
+						alarm       = event.get('alarm'),
+						signalling  = event.get('signalling'),
+						dnd         = event.get('dnd')
+					)
+		def onDahdiShowChannelsFailure(reason, servername, message = None):
+			if not "unknown command" in reason.getErrorMessage():
+				self._onAmiCommandFailure(reason, servername, message)
+
+		log.debug("Server %s :: Requesting DAHDI Channels..." % servername)
+		server.pushTask(server.ami.collectDeferred, {'action': 'dahdishowchannels'}, 'DAHDIShowChannelsComplete') \
+			.addCallbacks(onDahdiShowChannels, onDahdiShowChannelsFailure, errbackArgs = (servername, "Error Requesting DAHDI Channels"))
+
+		# Khomp
+		def onKhompChannelsShow(result):
+			log.debug("Server %s :: Processing Khomp Channels..." % servername)
+			if not 'no such command' in result[0].lower():
+				reChannelGSM = re.compile("\|\s+([0-9,]+)\s+\|.*\|\s+([0-9%]+)\s+\|")
+				reChannel    = re.compile("\|\s+([0-9,]+)\s+\|")
+				for line in result:
+					gChannelGSM = reChannelGSM.search(line)
+					gChannel    = reChannel.search(line)
+					if gChannelGSM:
+						board, chanid = gChannelGSM.group(1).split(',')
+						user = "Khomp/B%dC%d" % (int(board), int(chanid))
+						if (self.displayUsersDefault and not server.displayUsers.has_key(user)) or (not self.displayUsersDefault and server.displayUsers.has_key(user)):
+							self._createPeer(
+								servername,
+								channeltype = 'Khomp',
+								peername    = 'B%dC%d' % (int(board), int(chanid)),
+								status      = 'Signal: %s' % gChannelGSM.group(2).strip()
+							)
+					elif gChannel:
+						board, chanid = gChannel.group(1).split(',')
+						user = "Khomp/B%dC%d" % (int(board), int(chanid))
+						if (self.displayUsersDefault and not server.displayUsers.has_key(user)) or (not self.displayUsersDefault and server.displayUsers.has_key(user)):
+							self._createPeer(
+								servername,
+								channeltype = 'Khomp',
+								peername    = 'B%dC%d' % (int(board), int(chanid)),
+								status      = 'No Alarm'
+							)
+
+		log.debug("Server %s :: Requesting Khomp Channels..." % servername)
+		server.pushTask(server.ami.command, 'khomp channels show') \
+			.addCallbacks(onKhompChannelsShow, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting Khomp Channels"))
+
+		#Meetme
+		def onGetMeetmeConfig(result):
+			log.debug("Server %s :: Processing meetme.conf..." % servername)
+			for k, v in result.items():
+				if v.startswith("conf="):
+					meetmeroom = v.replace("conf=", "")
+					if (self.displayMeetmesDefault and not server.displayMeetmes.has_key(meetmeroom)) or (not self.displayMeetmesDefault and server.displayMeetmes.has_key(meetmeroom)):
+						self._createMeetme(servername, meetme = meetmeroom)
+
+		log.debug("Server %s :: Requesting meetme.conf..." % servername)
+		server.pushTask(server.ami.getConfig, 'meetme.conf') \
+			.addCallbacks(onGetMeetmeConfig, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting meetme.conf"))
+
 		## List meeting rooms
-
-
-
-		# ## Peers IAX different behavior in asterisk 1.4
-		# if server.version == 1.4:
-		# 	def onIax2ShowPeers(result):
-		# 		if len(result) > 2:
-		# 			for line in result[1:][:-1]:
-		# 				peername = line.split(' ', 1)[0].split('/', 1)[0]
-		# 				self.handlerEventPeerEntry(server.ami, {'channeltype': 'IAX2', 'objectname': peername, 'status': 'Unknown'})
-		# 	log.debug("Server %s :: Requesting IAX Peers (via iax2 show peers)..." % servername)
-		# 	server.pushTask(server.ami.command, 'iax2 show peers') \
-		# 		.addCallbacks(onIax2ShowPeers, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting IAX Peers (via iax2 show peers)"))
-		# else:
-		# 	log.debug("Server %s :: Requesting IAX Peers..." % servername)
-		# 	server.pushTask(server.ami.sendDeferred, {'action': 'iaxpeers'}) \
-		# 		.addCallback(server.ami.errorUnlessResponse) \
-		# 		.addErrback(self._onAmiCommandFailure, servername, "Error Requesting IAX Peers")
-		#
-		# # DAHDI
-		# def onDahdiShowChannels(events):
-		# 	log.debug("Server %s :: Processing DAHDI Channels..." % servername)
-		# 	for event in events:
-		# 		user = "DAHDI/%s" % event.get('dahdichannel')
-		# 		if (self.displayUsersDefault and not server.displayUsers.has_key(user)) or (not self.displayUsersDefault and server.displayUsers.has_key(user)):
-		# 			self._createPeer(
-		# 				servername,
-		# 				channeltype = 'DAHDI',
-		# 				peername    = event.get('dahdichannel', event.get('channel')),
-		# 				context     = event.get('context'),
-		# 				alarm       = event.get('alarm'),
-		# 				signalling  = event.get('signalling'),
-		# 				dnd         = event.get('dnd')
-		# 			)
-		# def onDahdiShowChannelsFailure(reason, servername, message = None):
-		# 	if not "unknown command" in reason.getErrorMessage():
-		# 		self._onAmiCommandFailure(reason, servername, message)
-		#
-		# log.debug("Server %s :: Requesting DAHDI Channels..." % servername)
-		# server.pushTask(server.ami.collectDeferred, {'action': 'dahdishowchannels'}, 'DAHDIShowChannelsComplete') \
-		# 	.addCallbacks(onDahdiShowChannels, onDahdiShowChannelsFailure, errbackArgs = (servername, "Error Requesting DAHDI Channels"))
-		#
-		# # Khomp
-		# def onKhompChannelsShow(result):
-		# 	log.debug("Server %s :: Processing Khomp Channels..." % servername)
-		# 	if not 'no such command' in result[0].lower():
-		# 		reChannelGSM = re.compile("\|\s+([0-9,]+)\s+\|.*\|\s+([0-9%]+)\s+\|")
-		# 		reChannel    = re.compile("\|\s+([0-9,]+)\s+\|")
-		# 		for line in result:
-		# 			gChannelGSM = reChannelGSM.search(line)
-		# 			gChannel    = reChannel.search(line)
-		# 			if gChannelGSM:
-		# 				board, chanid = gChannelGSM.group(1).split(',')
-		# 				user = "Khomp/B%dC%d" % (int(board), int(chanid))
-		# 				if (self.displayUsersDefault and not server.displayUsers.has_key(user)) or (not self.displayUsersDefault and server.displayUsers.has_key(user)):
-		# 					self._createPeer(
-		# 						servername,
-		# 						channeltype = 'Khomp',
-		# 						peername    = 'B%dC%d' % (int(board), int(chanid)),
-		# 						status      = 'Signal: %s' % gChannelGSM.group(2).strip()
-		# 					)
-		# 			elif gChannel:
-		# 				board, chanid = gChannel.group(1).split(',')
-		# 				user = "Khomp/B%dC%d" % (int(board), int(chanid))
-		# 				if (self.displayUsersDefault and not server.displayUsers.has_key(user)) or (not self.displayUsersDefault and server.displayUsers.has_key(user)):
-		# 					self._createPeer(
-		# 						servername,
-		# 						channeltype = 'Khomp',
-		# 						peername    = 'B%dC%d' % (int(board), int(chanid)),
-		# 						status      = 'No Alarm'
-		# 					)
-		#
-		# log.debug("Server %s :: Requesting Khomp Channels..." % servername)
-		# server.pushTask(server.ami.command, 'khomp channels show') \
-		# 	.addCallbacks(onKhompChannelsShow, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting Khomp Channels"))
-		#
-		# Meetme
-		# def onGetMeetmeConfig(result):
-		# 	log.debug("Server %s :: Processing meetme.conf..." % servername)
-		# 	for k, v in result.items():
-		# 		if v.startswith("conf="):
-		# 			meetmeroom = v.replace("conf=", "")
-		# 			if (self.displayMeetmesDefault and not server.displayMeetmes.has_key(meetmeroom)) or (not self.displayMeetmesDefault and server.displayMeetmes.has_key(meetmeroom)):
-		# 				self._createMeetme(servername, meetme = meetmeroom)
-
-		# log.debug("Server %s :: Requesting meetme.conf..." % servername)
-		# server.pushTask(server.ami.getConfig, 'meetme.conf') \
-		# 	.addCallbacks(onGetMeetmeConfig, self._onAmiCommandFailure, errbackArgs = (servername, "Error Requesting meetme.conf"))
-
 		log.debug("Server %s :: Requesting Meetme or Conference Rooms..." % servername)
 		server.pushTask(server.ami.sendDeferred, {'action' : 'ConfbridgeListRooms'}) \
 			.addCallback(server.ami.errorUnlessResponse) \
@@ -1927,7 +1924,7 @@ class Monast:
 			tech, peer = source.split('/')
 			peer       = server.status.peers.get(tech).get(peer)
 			context    = peer.context
-			exten      = destination
+			exten      = destination.split('/')[1]
 			priority   = 1
 			variable   = dict([i.split('=', 1) for i in peer.variables])
 			originates.append((channel, context, exten, priority, timeout, callerid, account, application, data, variable, async))
@@ -1942,8 +1939,8 @@ class Monast:
 		if type == "meetmeInviteNumbers":
 			roomtype = action['roomtype'][0]
 			dynamic     = not server.status.meetmes[roomtype].has_key(destination)
-			#application = "MeetMe"
-			application = "ConfBridge"
+			application = "MeetMe"
+			# application = "ConfBridge"
 			data        = "%s%sd" % (destination, [",", "|"][server.version == 1.4])
 			numbers     = source.replace('\r', '').split('\n')
 			for number in [i.strip() for i in numbers if i.strip()]:
