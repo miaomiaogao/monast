@@ -978,6 +978,7 @@ var Monast = {
 		$('fieldset-' + m.roomtype + '-fieldset').select('legend a')[0].innerText =m.roomtype + '(' + innerText_num + ')';
 		// Set room user numbers
 		$(roomid).select('legend a')[0].innerText = m.roomname + '(' + Object.keys(m.users).length +')';
+		$(roomid).select('legend')[0].oncontextmenu = function () { Monast.showMeetmeContextMenu(roomid); return false; };
 		// Clear meetme users
 		$(m.id).select('[class="meetmeUser"]').each(function (el) { el.remove(); });
 		// Show member hint
@@ -1062,28 +1063,28 @@ var Monast = {
 		);
 		Monast.confirmDialog.setHeader('Invite Numbers');
 	},
-	// showMeetmeContextMenu: function (id)
-	// {
-	// 	this._contextMenu.clearContent();
-	// 	this._contextMenu.cfg.queueProperty("xy", this.getMousePosition());
+	showMeetmeContextMenu: function (id)
+	{
+		this._contextMenu.clearContent();
+		this._contextMenu.cfg.queueProperty("xy", this.getMousePosition());
 		
-	// 	var inviteNumbers = function (p_sType, p_aArgs, p_oValue)
-	// 	{
-	// 		Monast._meetmeInviteNumbers(null, p_oValue);
-	// 	};
+		var inviteNumbers = function (p_sType, p_aArgs, p_oValue)
+		{
+			Monast._meetmeInviteNumbers(null, p_oValue);
+		};
 		
-	// 	var meetme = this.meetmes.get(id);
-	// 	var m = [
-	// 		[
-	// 			{text: "Invite Numbers", onclick: {fn: inviteNumbers, obj: meetme}},
-	// 		]
-	// 	];
-	// 	//console.log(meetme);
-	// 	this._contextMenu.addItems(m);
-	// 	this._contextMenu.setItemGroupTitle("Meetme:  " + meetme.roomname, 0);
-	// 	this._contextMenu.render(document.body);
-	// 	this._contextMenu.show();
-	// },
+		var meetme = this.meetmes.get(id);
+		var m = [
+			[
+				{text: "Invite Numbers", onclick: {fn: inviteNumbers, obj: meetme}},
+			]
+		];
+		//console.log(meetme);
+		this._contextMenu.addItems(m);
+		this._contextMenu.setItemGroupTitle("Meetme:  " + meetme.roomname, 0);
+		this._contextMenu.render(document.body);
+		this._contextMenu.show();
+	},
 	showMeetmeUserContextMenu: function (id, user)
 	{
 		this._contextMenu.clearContent();

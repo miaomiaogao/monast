@@ -1425,8 +1425,6 @@ class Monast:
 							server.peergroups[tech] = {}
 						server.peergroups[tech][peer] = peergroup
 
-
-
 		## Peers
 		self.displayUsersDefault = config.get('peers', 'default') == 'show' # self.displayUsersDefault is True
 
@@ -1480,8 +1478,6 @@ class Monast:
 					forcedCid   = forcedCid,
 					_log        = '(forced peer)'
 				)
-		# print 'Parse config : server: -- 1 ...',server
-
 
 		## Meetmes / Conferences
 		self.displayMeetmesDefault = config.get('meetmes', 'default') == 'show'
@@ -1502,7 +1498,11 @@ class Monast:
 			if display == "force":
 				##self._createMeetme(servername, meetme = meetme, forced = True, _log = "By monast config")
 				self._createMeetme(servername, roomtype = roomtype, roomname = roomname, forced = True, _log = "By monast config")
-					
+
+		self.bridge_profile = config.get('conf_dynamic_data', 'bridge_profile')
+		self.user_profile = config.get('conf_dynamic_data', 'user_profile')
+		self.menu = config.get('conf_dynamic_data', 'menu')
+
 		## Queues
 		self.displayQueuesDefault = config.get('queues', 'default') == 'show'
 			
@@ -1923,8 +1923,9 @@ class Monast:
 		if type == "dial":
 			tech, peer = source.split('/')
 			peer       = server.status.peers.get(tech).get(peer)
-			context    = peer.context
-			exten      = destination.split('/')[1]
+			context_t    = peer.context
+			context = re.sub(r" ?\([^)]+\)", "", context_t)
+			exten      = destination #.split('/')[1]
 			priority   = 1
 			variable   = dict([i.split('=', 1) for i in peer.variables])
 			originates.append((channel, context, exten, priority, timeout, callerid, account, application, data, variable, async))
@@ -1937,11 +1938,16 @@ class Monast:
 			logs.append("Invite from %s to %s(%s)" % (channel, application, data))
 		
 		if type == "meetmeInviteNumbers":
-			roomtype = action['roomtype'][0]
-			dynamic     = not server.status.meetmes[roomtype].has_key(destination)
-			application = "MeetMe"
-			# application = "ConfBridge"
-			data        = "%s%sd" % (destination, [",", "|"][server.version == 1.4])
+			roomtype = action['roomtype'][0].upper()
+			# dynamic     = not server.status.meetmes[roomtype].has_key(destination)
+			if roomtype == "CONFS":
+				application = "ConfBridge"
+			elif roomtype == "MEETMES":
+				application = "MeetMe"
+			data        = "%s%s" % (destination, [",", "|"][server.version == 1.4])
+			data       += "%s%s"% (self.bridge_profile, [",", "|"][server.version == 1.4])
+			data       += "%s%s" % (self.user_profile,[",", "|"][server.version == 1.4])
+			data        += self.menu
 			numbers     = source.replace('\r', '').split('\n')
 			for number in [i.strip() for i in numbers if i.strip()]:
 				channel     = number #"Local/%s@%s" % (number, context)
@@ -2412,7 +2418,6 @@ class Monast:
 		server   = self.servers.get(ami.servername)
 		uniqueid = event.get('uniqueid')
 		channel  = event.get('channel')
-		
 		self._createChannel(
 			ami.servername,
 			uniqueid     = uniqueid,
