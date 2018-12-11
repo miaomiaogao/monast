@@ -1942,15 +1942,16 @@ class Monast:
 			# dynamic     = not server.status.meetmes[roomtype].has_key(destination)
 			if roomtype == "CONFS":
 				application = "ConfBridge"
+				data = "%s%s" % (destination, [",", "|"][server.version == 1.4])
+				data += "%s%s" % (self.bridge_profile, [",", "|"][server.version == 1.4])
+				data += "%s%s" % (self.user_profile, [",", "|"][server.version == 1.4])
+				data += self.menu
 			elif roomtype == "MEETMES":
 				application = "MeetMe"
-			data        = "%s%s" % (destination, [",", "|"][server.version == 1.4])
-			data       += "%s%s"% (self.bridge_profile, [",", "|"][server.version == 1.4])
-			data       += "%s%s" % (self.user_profile,[",", "|"][server.version == 1.4])
-			data        += self.menu
+				data = "%s%sd" % (destination, [",", "|"][server.version == 1.4])
 			numbers     = source.replace('\r', '').split('\n')
 			for number in [i.strip() for i in numbers if i.strip()]:
-				channel     = number #"Local/%s@%s" % (number, context)
+				channel     =  number #"Local/%s@%s" % (number, context)
 				callerid    = "MonAst Invited <%s>" % (number)
 				originates.append((channel, context, exten, priority, timeout, callerid, account, application, data, variable, async))
 				logs.append("Invite from %s to %s(%s)" % (channel, application, data))

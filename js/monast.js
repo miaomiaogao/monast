@@ -985,7 +985,7 @@ var Monast = {
 		$(m.id + '-' + 'memNumber').innerHTML = !Object.isArray(m.users) ? "Members in this room are:" :"No members in this room." ;
 		// Invite new numbers
 		//$(m.id + '-' + 'inviteNumberButton').on('click', function(){Monast.showMeetmeContextMenu(m.id); return false}); 
-		$(m.id + '-' + 'inviteNumberButton').on('click', function(){Monast._meetmeInviteNumbers(null, m); return false}); 
+		//$(m.id + '-' + 'inviteNumberButton').on('click', function(){Monast._meetmeInviteNumbers(null, m); return false}); 
 		
 		if (!Object.isArray(m.users)){
 			var keys = Object.keys(m.users).sort();
