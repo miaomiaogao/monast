@@ -382,8 +382,8 @@ class MonastHTTP(resource.Resource):
 			for roomname, room in roomlist.items():
 				tmp[servername]['meetmes'][roomtype].append(room.__dict__)
 			tmp[servername]['meetmes'][roomtype].sort(lambda x, y: cmp(x.get('roomname'), y.get('roomname')))
-		print(time.strftime('%H:%M:%S'))
-		print(tmp[servername]['meetmes'])
+		# print(time.strftime('%H:%M:%S'))
+		# print(tmp[servername]['meetmes'])
 		## Parked Calls
 		for channel, parked in server.status.parkedCalls.items():
 			tmp[servername]['parkedCalls'].append(parked.__dict__)
@@ -2098,8 +2098,8 @@ class Monast:
 			.addErrback(self._onAmiCommandFailure, servername, "Error Executting Queue Member Remove: %s -> %s" % (queue, location))
 			
 	def clientAction_MeetmeKick(self, session, action):
-		print('action:' );
-		print(action);
+		# print('action:' );
+		# print(action);
 		servername = action['server'][0]
 		roomtype   = action['roomtype'][0]
 		roomname   = action['roomname'][0]

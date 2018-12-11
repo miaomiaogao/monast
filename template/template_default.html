@@ -297,9 +297,9 @@
 <!-- MeetmeRoom-->
 <div class = hidden id="Template::Meetme::Room">
   
-  <!-- <div  monast = "inviteNumber">
+  <div  monast = "inviteNumber">
       <p><button monast = "inviteNumberButton">Invite New Number</button></p>
-  </div> -->
+  </div>
  
   <div monast="memNumber">&nbsp;
   </div>
@@ -342,9 +342,15 @@
 <div style="display: none" id="Template::Meetme::Form::InviteNumbers">
   <table class="tableInfo">
     <tr>
-      <td class="key">Room Number:</td>
+      <td class="key">Room Type:</td>
       <td>
-        <input type="text" id="Meetme::Form::InviteNumbers::Meetme" value="#{meetme}">
+        <input type="text" id="Meetme::Form::InviteNumbers::Roomtype" value="#{roomtype}">
+      </td>
+    </tr>
+    <tr>
+      <td class="key">Room Name:</td> 
+      <td>
+        <input type="text" id="Meetme::Form::InviteNumbers::Meetme" value="#{roomname}">
       </td>
     </tr>
     <tr>
