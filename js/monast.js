@@ -45,6 +45,7 @@ var Monast = {
 	MONAST_KEEP_CALLS_SORTED       : true,
 	MONAST_KEEP_PARKEDCALLS_SORTED : true,
 	
+
 	COLORS: {
 		BLACK  : "#000000",
 		WHITE  : "#ffffff",
@@ -1044,7 +1045,7 @@ var Monast = {
 		// 	var d = new Date();
 		// 	m     = {meetme: "Monast-" + parseInt(d.getTime() / 1000)};
 		// }
-		console.log("here:");
+		//console.log("here:");
 		Monast.doConfirm(
 			new Template($("Template::Meetme::Form::InviteNumbers").innerHTML).evaluate(m),
 			function () {
@@ -1054,8 +1055,7 @@ var Monast = {
 					parameters: {
 						reqTime: new Date().getTime(),
 						action: Object.toJSON({action: 'Originate', from: $('Meetme::Form::InviteNumbers::Numbers').value, 
-								 to: $('Meetme::Form::InviteNumbers::Meetme').value, type: 'meetmeInviteNumbers',
-								 roomtype:$('Meetme::Form::InviteNumbers::Roomtype').value
+								 to: $('Meetme::Form::InviteNumbers::Meetme').value, type: 'meetmeInviteNumbers'
 								 })
 					}
 				});
@@ -1873,26 +1873,6 @@ var Monast = {
 		if ($('authentication') || $('error'))
 			return;
 		
-		// CheckBox Buttons for Mixed Pannels
-		Monast._checkBoxTabButtons = [];
-		var tabs = [
-		    ["peersDiv", "Peers/Users"],
-		    ["meetmesDiv", "Meetme Rooms"],
-		    ["chanCallDiv", "Channels/Calls"],
-		    ["parkedCallsDiv", "Parked Calls"],
-		    ["queuesDiv", "Queues"]
-		];
-		tabs.each(function (tab) {
-			var name  = tab[0];
-			var title = tab[1];
-			if ($("checkBoxTab_" + name))
-			{
-				var button = new YAHOO.widget.Button("checkBoxTab_" + name, { label: title });
-				button.addListener('checkedChange', Monast.showHidePannels);
-				Monast._checkBoxTabButtons.push(button);
-			}
-		});
-		
 		// Cookie to save View state
 		Monast._stateCookie = YAHOO.util.Cookie.get(MONAST_COOKIE_KEY);
 		if (!Monast._stateCookie)
@@ -1926,6 +1906,28 @@ var Monast = {
 				}
 			});
 		});
+
+		// CheckBox Buttons for Mixed Pannels
+		Monast._checkBoxTabButtons = [];
+		var tabs = [
+		    ["peersDiv", "Peers/Users"],
+			//["meetmesDiv", "Meeting Rooms"],
+			["meetmesDiv", Monast._tabPannel._tabParent.innerText.split('\n')[2]],
+		    ["chanCallDiv", "Channels/Calls"],
+		    ["parkedCallsDiv", "Parked Calls"],
+		    ["queuesDiv", "Queues"]
+		];
+		tabs.each(function (tab) {
+			var name  = tab[0];
+			var title = tab[1];
+			if ($("checkBoxTab_" + name))
+			{
+				var button = new YAHOO.widget.Button("checkBoxTab_" + name, { label: title });
+				button.addListener('checkedChange', Monast.showHidePannels);
+				Monast._checkBoxTabButtons.push(button);
+			}
+		});
+		
 		Monast._tabPannel.getTab(0).addListener('click', function(e) {
 			Monast._checkBoxTabButtons.each(function (button) {
 				button.set('checked', Monast._stateCookie.buttons[button.get('id')]);
@@ -1945,6 +1947,8 @@ var Monast = {
 		
 		if (Monast.MONAST_CALL_TIME)
 			setInterval("Monast._runChrono()", 500);
+
+		
 	},
 	
 	showHidePannels: function (e)

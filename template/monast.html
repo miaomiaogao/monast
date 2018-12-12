@@ -3,7 +3,9 @@
   <ul class="yui-nav">
     <li id="liTab_mixed"><a href="#tab_mixed"><em>Mixed Pannels</em></a></li>
     <li id="liTab_peersDiv"><a href="#tab_peersDiv"><em>Peers/Users</em></a></li>
-    <li id="liTab_meetmesDiv"><a href="#tab_meetmesDiv"><em>Meetme/Conference Rooms</em></a></li>
+    <!-- START BLOCK : limeetmesDiv -->
+    <li id="liTab_meetmesDiv"><a href="#tab_meetmesDiv"><em>{conftype}</em></a></li>
+    <!-- END BLOCK : limeetmesDiv -->
     <li id="liTab_chanCallDiv"><a href="#tab_chanCallDiv"><em>Channels/Calls</em></a></li>
     <li id="liTab_parkedCallsDiv"><a href="#tab_parkedCallsDiv"><em>Parked Calls</em></a></li>
     <li id="liTab_queuesDiv"><a href="#tab_queuesDiv"><em>Queues</em></a></li>
@@ -53,8 +55,9 @@
     </div>
     
     <div id="meetmesDiv">
+    <!-- START BLOCK : roomtypes -->
     <fieldset>
-      <legend><b>Meetme/Conference Rooms</b></legend>
+      <legend><b>{conftype}</b></legend>
         <p>
           <span><input type="button" id="buttonMeemteCreate" value="Create New Rooms"></span>
           <script language="javascript">
@@ -63,18 +66,15 @@
         </p>
       <div id="meetmeDivWrapper">
       
-      <!-- START BLOCK : roomtypes -->
       <fieldset id="fieldset-{roomtypes}-fieldset" style="display:none">
         <legend><a href="javascript:void(0)" title="Show/Hide" class="a" onclick="$('fieldset-{roomtypes}').visible() ? $('fieldset-{roomtypes}').hide() : $('fieldset-{roomtypes}').show()">{roomtypes} ({count})</a></legend>
         <div id="fieldset-{roomtypes}" >
         </div>
-        
       </fieldset>
-      <!-- END BLOCK : roomtypes -->
-      
       </div>
       <div style="clear: both;"></div>
     </fieldset>
+    <!-- END BLOCK : roomtypes -->
     </div>
     
     <div id="chanCallDiv">

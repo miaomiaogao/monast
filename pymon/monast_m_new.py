@@ -346,16 +346,18 @@ class MonastHTTP(resource.Resource):
 		session.updates = []
 		
 		tmp[servername] = {
+			'conftype' : self.monast.conftype,
 			'peers': {},
 			'channels': [],
 			'bridges': [],
-			'meetmes': {},
+			'conference': {},
 			'queues': [],
 			'queueMembers': [],
 			'queueClients': [],
 			'queueCalls': [],
 			'parkedCalls': []
 		}
+
 		## Peers
 		for tech, peerlist in server.status.peers.items():
 			tmp[servername]['peers'][tech] = []
@@ -373,17 +375,17 @@ class MonastHTTP(resource.Resource):
 		tmp[servername]['bridges'].sort(lambda x, y: cmp(x.get('seconds'), y.get('seconds')))
 		tmp[servername]['bridges'].reverse()
 		#tmp[servername]['bridges'].sort(lambda x, y: cmp(x.get('dialtime'), y.get('dialtime')))
-		## Meetmes
-		# for meetmeroom, meetme in server.status.meetmes.items():
+		## Conferences
+		# for meetmeroom, meetme in server.status.conference.items():
 		# 	tmp[servername]['meetmes'].append(meetme.__dict__)
 		# tmp[servername]['meetmes'].sort(lambda x, y: cmp(x.get('meetme'), y.get('meetme')))
-		for roomtype, roomlist in server.status.meetmes.items():
-			tmp[servername]['meetmes'][roomtype] = []
+		for roomtype, roomlist in server.status.conference.items():
+			tmp[servername]['conference'][roomtype] = []
 			for roomname, room in roomlist.items():
-				tmp[servername]['meetmes'][roomtype].append(room.__dict__)
-			tmp[servername]['meetmes'][roomtype].sort(lambda x, y: cmp(x.get('roomname'), y.get('roomname')))
+				tmp[servername]['conference'][roomtype].append(room.__dict__)
+			tmp[servername]['conference'][roomtype].sort(lambda x, y: cmp(x.get('roomname'), y.get('roomname')))
 		# print(time.strftime('%H:%M:%S'))
-		# print(tmp[servername]['meetmes'])
+		# print(tmp[servername]['conference'])
 		## Parked Calls
 		for channel, parked in server.status.parkedCalls.items():
 			tmp[servername]['parkedCalls'].append(parked.__dict__)
@@ -416,11 +418,9 @@ class MonastHTTP(resource.Resource):
 
 		if len(session.updates) > 0:
 			updates         = [u for u in session.updates if u.get('servername') == servername]
-			# updates_meetme    = [u for u in session.updates if(u.get('servername') == servername and u.objecttype == 'Meetme')]
 			session.updates = []
 		if len(updates) > 0:
 			log.debug("gmm test : updates: %s" % json.dumps(updates, encoding = "ISO8859-1"))
-			# print(updates_meetme)
 			request.write(json.dumps(updates, encoding = "ISO8859-1"))
 		else:
 			request.write("NO UPDATES")
@@ -576,11 +576,10 @@ class Monast:
 			'Link'                : self.handlerEventLink,
 			'Unlink'              : self.handlerEventUnlink,
 			'Bridge'              : self.handlerEventBridge,
-			'ConfbridgeJoin'      : self.handlerEventMeetmeJoin,
-			'ConfbridgeLeave'     : self.handlerEventMeetmeLeave,
+			'ConfbridgeJoin'      : self.handlerEventConfbridgeJoin,
+			'ConfbridgeLeave'     : self.handlerEventConfbridgeLeave,
 			'ConfbridgeListRooms' : self.handlerConfbridgeListRooms,
 			'ConfbridgeList' 	  : self.handlerConfbridgeList,
-			'OriginateResponse'	  : self.handlerOriginateResponse,
 			'ParkedCall'          : self.handlerEventParkedCall,
 			'UnParkedCall'        : self.handlerEventUnParkedCall,
 			'ParkedCallTimeOut'   : self.handlerEventParkedCallTimeOut,
@@ -966,7 +965,7 @@ class Monast:
 			log.exception("Server %s :: Unhandled exception removing bridge: %s (%s) with %s (%s)", servername, uniqueid, channel, bridgeduniqueid, bridgedchannel)
 			
 	## Meetme
-	def _createMeetme(self, servername, **kw):
+	def _createConference(self, servername, **kw):
 		server     = self.servers.get(servername)
 		roomtype = kw.get('roomtype')
 		roomname = kw.get('roomname')
@@ -974,12 +973,12 @@ class Monast:
 		dynamic    = kw.get("dynamic", False)
 		forced     = kw.get("forced", False)
 		_log       = kw.get('_log')
-		##meetme     = server.status.meetmes.get(meetmeroom)
-		if not server.status.meetmes.has_key(roomtype) and kw.get('forced', False):
+		##meetme     = server.status.conference.get(meetmeroom)
+		if not server.status.conference.has_key(roomtype) and kw.get('forced', False):
 			log.warning("Server %s :: Adding a not implemented RoomType %s (forced in config file)", servername, roomtype)
-			server.status.meetmes[roomtype] = {}
-		if server.status.meetmes.has_key(roomtype):
-			meetme = server.status.meetmes[roomtype].get(roomname)
+			server.status.conference[roomtype] = {}
+		if server.status.conference.has_key(roomtype):
+			meetme = server.status.conference[roomtype].get(roomname)
 
 			if not meetme:
 				meetme = GenericObject("Meetme")
@@ -989,7 +988,7 @@ class Monast:
 				meetme.forced  = forced
 				meetme.users   = {}	
 				log.debug("Server %s :: create: %s/%s %s", servername, roomtype, roomname, _log)
-				server.status.meetmes[meetme.roomtype][meetme.roomname] = meetme
+				server.status.conference[meetme.roomtype][meetme.roomname] = meetme
 
 				if dynamic:
 					self.http._addUpdate(servername = servername, **meetme.__dict__.copy())
@@ -1001,20 +1000,20 @@ class Monast:
 			log.debug('roomtype %s is not existed...' %roomtype)
 		return meetme
 			
-	def _updateMeetme(self, servername, **kw):
+	def _updateConference(self, servername, **kw):
 		# meetmeroom = kw.get("meetme")
-		log.debug('Updating Meetmes...')
+		log.debug('Updating Conferences...')
 		roomtype = kw.get('roomtype')
 		roomname = kw.get('roomname')
 		_log     = kw.get('_log', '')
 		try:
-			if not self.servers.get(servername).status.meetmes.has_key(roomtype):
+			if not self.servers.get(servername).status.conference.has_key(roomtype):
 				log.warning("Server %s :: Adding a not implemented RoomType %s ", servername, roomtype)
-				self.servers.get(servername).status.meetmes[roomtype] = {}
+				self.servers.get(servername).status.conference[roomtype] = {}
 			else:
-				meetme = self.servers.get(servername).status.meetmes.get(roomtype, {}).get(roomname)
+				meetme = self.servers.get(servername).status.conference.get(roomtype, {}).get(roomname)
 				if not meetme:
-					meetme = self._createMeetme(servername, roomtype = roomtype, roomname = roomname, dynamic = True, _log = "(dynamic)")
+					meetme = self._createConference(servername, roomtype = roomtype, roomname = roomname, dynamic = True, _log = "(dynamic)")
 
 			user = kw.get('addUser')
 			if user:
@@ -1033,7 +1032,7 @@ class Monast:
 					log.debug("Server %s :: User %s %s is not in Meetme/Conference %s %s", servername, user.get('calleridnum'),\
 				 					 					user.get('calleridname'), roomtype, roomname)
 
-			log.debug("gmm test: _updateMeetme : %s ", meetme)
+			log.debug("gmm test: _updateConference : %s ", meetme)
 			self.http._addUpdate(servername = servername, **meetme.__dict__.copy())
 						
 			if meetme.dynamic and len(meetme.users) == 0:
@@ -1054,11 +1053,11 @@ class Monast:
 		_log       = kw.get('_log', '')
 		try:
 			server = self.servers.get(servername)
-			meetme = server.status.meetmes.get(roomtype, {}).get(roomname)
+			meetme = server.status.conference.get(roomtype, {}).get(roomname)
 			if meetme:
 				log.debug("Server %s :: %s remove: %s %s", servername, roomtype, roomname, _log)
-				# del server.status.meetmes.get(roomtype,{})[meetme]
-				del server.status.meetmes.get(roomtype,{})[roomname]
+				# del server.status.conference.get(roomtype,{})[meetme]
+				del server.status.conference.get(roomtype,{})[roomname]
 				log.debug("gmm test : trying to removeMeetme : %s ", meetme)
 
 				self.http._addUpdate(servername = servername, action = 'RemoveMeetme', roomtype = roomtype, roomname=roomname)
@@ -1377,7 +1376,8 @@ class Monast:
 			self.servers[servername].taskCheckStatus  = task.LoopingCall(self.taskCheckStatus, servername)
 			
 			self.servers[servername].status              = GenericObject()
-			self.servers[servername].status.meetmes      = {
+			# self.servers[servername].status.conftype     = None
+			self.servers[servername].status.conference      = {
 				'MEETMES' : {},
 				'CONFS' : {},
 			}
@@ -1480,24 +1480,48 @@ class Monast:
 				)
 
 		## Meetmes / Conferences
-		self.displayMeetmesDefault = config.get('meetmes', 'default') == 'show'
-		for meetme, display in config.items('meetmes'):
-			if meetme in ('default'):
-				continue
-			
-			servername, meetme = meetme.split('/', 1)
-			server = self.servers.get(servername)
-			if not server:
-				continue
-			
-			roomtype, roomname = meetme.split('/',1)
-			if roomtype in server.status.meetmes.keys():
-				if (self.displayMeetmesDefault and display == "hide") or (not self.displayMeetmesDefault and display == "show"):
-					server.displayMeetmes[meetme] = True
-				
-			if display == "force":
-				##self._createMeetme(servername, meetme = meetme, forced = True, _log = "By monast config")
-				self._createMeetme(servername, roomtype = roomtype, roomname = roomname, forced = True, _log = "By monast config")
+		if 'meetmes' in config.sections():
+			self.conftype =  'MEETMES'
+			self.displayConferenceDefault = config.get('meetmes', 'default') == 'show'
+			for meetme, display in config.items('meetmes'):
+				if meetme in ('default'):
+					continue
+
+				servername, meetme = meetme.split('/', 1)
+				server = self.servers.get(servername)
+				if not server:
+					continue
+
+				roomtype, roomname = meetme.split('/',1)
+				if roomtype in server.status.conference.keys():
+					if (self.displayConferenceDefault and display == "hide") or (not self.displayConferenceDefault and display == "show"):
+						server.displayMeetmes[meetme] = True
+
+				if display == "force":
+					##self._createConference(servername, meetme = meetme, forced = True, _log = "By monast config")
+					self._createConference(servername, roomtype = roomtype, roomname = roomname, forced = True, _log = "By monast config")
+		elif 'confbridges' in config.sections():
+			self.conftype = 'CONFS'
+			self.displayConferenceDefault = config.get('confbridges', 'default') == 'show'
+			for meetme, display in config.items('confbridges'):
+				if meetme in ('default'):
+					continue
+
+				servername, meetme = meetme.split('/', 1)
+				server = self.servers.get(servername)
+				if not server:
+					continue
+
+				roomtype, roomname = meetme.split('/', 1)
+				if roomtype in server.status.conference.keys():
+					if (self.displayConferenceDefault and display == "hide") or (
+							not self.displayConferenceDefault and display == "show"):
+						server.displayMeetmes[meetme] = True
+
+				if display == "force":
+					##self._createConference(servername, meetme = meetme, forced = True, _log = "By monast config")
+					self._createConference(servername, roomtype=roomtype, roomname=roomname, forced=True,
+									   _log="By monast config")
 
 		self.bridge_profile = config.get('conf_dynamic_data', 'bridge_profile')
 		self.user_profile = config.get('conf_dynamic_data', 'user_profile')
@@ -1589,7 +1613,7 @@ class Monast:
 		## Clear Server Status
 		toRemove = []
 
-		for roomtypes, rooms in server.status.meetmes.items():
+		for roomtype, rooms in server.status.conference.items():
 			toRemove = []
 			for roomname, room in rooms.items():
 				if not room.forced:
@@ -1597,11 +1621,11 @@ class Monast:
 			for roomname in toRemove:
 				del rooms[roomname]
 
-		# for meetmeroom, meetme in server.status.meetmes.items():
+		# for meetmeroom, meetme in server.status.conference.items():
 		# 	if not meetme.forced:
 		# 		toRemove.append(meetmeroom)
 		# for meetmeroom in toRemove:
-		# 	del server.status.meetmes[meetmeroom]
+		# 	del server.status.conference[meetmeroom]
 		
 		server.status.channels.clear()
 		server.status.bridges.clear()
@@ -1725,8 +1749,8 @@ class Monast:
 			for k, v in result.items():
 				if v.startswith("conf="):
 					meetmeroom = v.replace("conf=", "")
-					if (self.displayMeetmesDefault and not server.displayMeetmes.has_key(meetmeroom)) or (not self.displayMeetmesDefault and server.displayMeetmes.has_key(meetmeroom)):
-						self._createMeetme(servername, meetme = meetmeroom)
+					if (self.displayConferenceDefault and not server.displayMeetmes.has_key(meetmeroom)) or (not self.displayConferenceDefault and server.displayMeetmes.has_key(meetmeroom)):
+						self._createConference(servername, meetme = meetmeroom)
 
 		log.debug("Server %s :: Requesting meetme.conf..." % servername)
 		server.pushTask(server.ami.getConfig, 'meetme.conf') \
@@ -1938,8 +1962,8 @@ class Monast:
 			logs.append("Invite from %s to %s(%s)" % (channel, application, data))
 		
 		if type == "meetmeInviteNumbers":
-			roomtype = action['roomtype'][0].upper()
-			# dynamic     = not server.status.meetmes[roomtype].has_key(destination)
+			roomtype = self.conftype
+			# dynamic     = not server.status.conference[roomtype].has_key(destination)
 			if roomtype == "CONFS":
 				application = "ConfBridge"
 				data = "%s%s" % (destination, [",", "|"][server.version == 1.4])
@@ -2651,7 +2675,7 @@ class Monast:
 		self.handlerEventLink(ami, event)
 	
 	# Meetme Events
-	def handlerEventMeetmeJoin(self, ami, event):
+	def handlerEventConfbridgeJoin(self, ami, event):
 		log.debug("Server %s :: Processing Event Meetme/Conference Join..." % ami.servername)
 		meetme = event.get("meetme")
 		conference = event.get("conference")
@@ -2667,7 +2691,7 @@ class Monast:
 			log.debug("Server %s :: Processing Unexpected Roomtype..." % ami.servername)
 		
 		
-		self._updateMeetme(
+		self._updateConference(
 			ami.servername,
 			# meetme  = meetme,
 			roomtype = roomtype,
@@ -2682,7 +2706,7 @@ class Monast:
 		)
 		
 	# Meetme Events
-	def handlerEventMeetmeLeave(self, ami, event):
+	def handlerEventConfbridgeLeave(self, ami, event):
 		log.debug("Server %s :: Processing Event Meetme/Conference Leave..." % ami.servername)
 		meetme = event.get("meetme")
 		conference = event.get("conference")
@@ -2697,7 +2721,7 @@ class Monast:
 			roomname = None
 			log.debug("Server %s :: Processing Unexpected Roomtype..." % ami.servername)
 		
-		self._updateMeetme(
+		self._updateConference(
 			ami.servername,
 			roomtype = roomtype,
 			roomname = roomname,
@@ -2717,10 +2741,10 @@ class Monast:
 		roomtype = 'CONFS'
 		roomname = event.get('conference')
 		if roomname:
-			if (self.displayMeetmesDefault and not server.displayMeetmes.has_key(roomname)) or (
-					not self.displayMeetmesDefault and server.displayMeetmes.has_key(roomname)):
+			if (self.displayConferenceDefault and not server.displayMeetmes.has_key(roomname)) or (
+					not self.displayConferenceDefault and server.displayMeetmes.has_key(roomname)):
 				log.debug('create conference room name is: ' + roomname)
-				self._createMeetme(servername = ami.servername, roomtype = roomtype, roomname = roomname, dynamic = True, _log = "(dynamic)")
+				self._createConference(servername = ami.servername, roomtype = roomtype, roomname = roomname, dynamic = True, _log = "(dynamic)")
 
 				log.debug(
 					"Server %s :: Requesting Members of conference room %s ..." % (ami.servername, roomname))
@@ -2732,7 +2756,7 @@ class Monast:
 		log.debug("Server %s :: Processing Event ConfbridgeList..." % ami.servername)
 		roomtype = 'CONFS';
 		roomname = event.get("conference")
-		self._updateMeetme(ami.servername, roomtype = roomtype, roomname = roomname,
+		self._updateConference(ami.servername, roomtype = roomtype, roomname = roomname,
 							   addUser={
 								   'uniqueid': event.get('uniqueid'), #there is no uniqueid in this command
 								   'usernum': event.get("calleridnum"),
@@ -2740,31 +2764,6 @@ class Monast:
 								   'calleridnum': event.get("calleridnum"),
 								   'calleridname': event.get("calleridname"),
 							   })
-
-	# Originate response
-	def handlerOriginateResponse(self, ami, event):
-		log.debug("Server %s :: Processing Event OriginateResponse..." % ami.servername)
-		# application = event.get("application")
-		# if application != "MeetMe" and application != "ConfBridge" :
-		# 	log.debug("Server %s :: This application is not in use..." % (ami.servername, application))
-		# else:
-		# 	roomname = event.get('data').split(',')[0]
-		# 	if application == "MeetMe":
-		# 		roomtype = 'MEETMES'
-		# 	else:
-		# 		roomtype = 'CONFS'
-		# 	self._updateMeetme(
-		# 		ami.servername,
-		# 		roomtype=roomtype,
-		# 		roomname=roomname,
-		# 		addUser={
-		# 			'uniqueid': event.get('uniqueid'),
-		# 			'channel': event.get('channel'),
-		# 			'usernum': event.get("calleridnum"),
-		# 			'calleridnum': event.get("calleridnum"),
-		# 			'calleridname': event.get("calleridname"),
-		# 		}
-		# 	)
 
 	# Parked Calls Events
 	def handlerEventParkedCall(self, ami, event):

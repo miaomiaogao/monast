@@ -142,6 +142,14 @@ $template->assign('MONAST_BLINK_INTERVAL', MONAST_BLINK_INTERVAL);
 $template->assign('MONAST_KEEP_CALLS_SORTED', MONAST_KEEP_CALLS_SORTED ? 'true' : 'false');
 $template->assign('MONAST_KEEP_PARKEDCALLS_SORTED', MONAST_KEEP_PARKEDCALLS_SORTED ? 'true' : 'false');
 
+$template->newBlock('limeetmesDiv');
+if($status[$server]['conftype'] == 'CONFS'){
+	$template->assign('conftype','Conference Rooms');
+}
+elseif($status[$server]['conftype'] == 'MEETMES'){
+	$template->assign('conftype','Meetme Rooms');
+}
+
 if (MONAST_CLI_TAB)
 {
 	$template->newBlock('cli_tab');
@@ -239,31 +247,38 @@ foreach ($status[$server]['bridges'] as $bridge)
  * 	$template->assign('json', str_replace("'", "\'", monast_json_encode(($meetme))));
  * }
  */
-$meets = array_keys($status[$server]['meetmes']);
+$meets = array_keys($status[$server]['conference']);
 sort($meets );
 foreach ($meets as $meet)
 {
-	$members = $status[$server]['meetmes'][$meet];
-	// if (count($members) > 0)
-	// {
-	$template->newBlock('roomtypes');
-	$template->assign('roomtypes', $meet);
-	$template->assign('count', count($members));
+	if($meet == $status[$server]['conftype'])
+	{	
+		
 
-	foreach ($members as $idx => $room)
-	{
-		//{"roomtype":"CONFS","users":[],"forced":true,"dynamic":false,"roomname":"1902","objecttype":"Meetme"} (3)
-		$template->newBlock('meetrooms');
+		$members = $status[$server]['conference'][$meet];
+		$template->newBlock('roomtypes');
 		$template->assign('roomtypes', $meet);
-		$template->assign('rooms',$room["roomname"]);;
-		$template->assign('count', count($room['users']));
+		$template->assign('count', count($members));
+		if($meet == 'CONFS'){
+			$template->assign('conftype','Conference Rooms');
+		}
+		elseif($meet == 'MEETMES'){
+			$template->assign('conftype','Meetme Rooms');
+		}
 
-		$template->newBlock('process');
-		// $template->assign('json', str_replace(".", "\.", monast_json_encode(($room))));
-		$template->assign('json', monast_json_encode(($room)));
-
+		foreach ($members as $idx => $room)
+		{
+			$template->newBlock('meetrooms');
+			$template->assign('roomtypes', $meet);
+			$template->assign('rooms',$room["roomname"]);;
+			$template->assign('count', count($room['users']));
+	
+			$template->newBlock('process');
+			$template->assign('json', monast_json_encode(($room)));
+	
+		}
 	}
-	// }
+
 }
 
 
