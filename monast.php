@@ -141,6 +141,11 @@ $template->assign('MONAST_BLINK_COUNT', MONAST_BLINK_COUNT);
 $template->assign('MONAST_BLINK_INTERVAL', MONAST_BLINK_INTERVAL);
 $template->assign('MONAST_KEEP_CALLS_SORTED', MONAST_KEEP_CALLS_SORTED ? 'true' : 'false');
 $template->assign('MONAST_KEEP_PARKEDCALLS_SORTED', MONAST_KEEP_PARKEDCALLS_SORTED ? 'true' : 'false');
+if($status[$server]['conftype'] == 'CONFS'){
+	$template->assign('MONAST_CONFTYPE', "Conference Room");}
+elseif($status[$server]['conftype'] == 'MEETMES'){
+	$template->assign('MONAST_CONFTYPE','Meetme Rooms');
+}
 
 $template->newBlock('limeetmesDiv');
 if($status[$server]['conftype'] == 'CONFS'){

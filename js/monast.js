@@ -1873,6 +1873,30 @@ var Monast = {
 		if ($('authentication') || $('error'))
 			return;
 		
+		// CheckBox Buttons for Mixed Pannels
+		Monast._checkBoxTabButtons = []; 
+		var test = Monast.MONAST_CONFTYPE;
+		console.log(test);
+		var tabs = [
+		    ["peersDiv", "Peers/Users"],
+			//["meetmesDiv", "Conference Rooms"],
+			["meetmesDiv", test],
+		    ["chanCallDiv", "Channels/Calls"],
+		    ["parkedCallsDiv", "Parked Calls"],
+		    ["queuesDiv", "Queues"]
+		];
+		tabs.each(function (tab) {
+			var name  = tab[0];
+			var title = tab[1];
+			if ($("checkBoxTab_" + name))
+			{
+				var button = new YAHOO.widget.Button("checkBoxTab_" + name, { label: title });
+				console.log(title);
+				button.addListener('checkedChange', Monast.showHidePannels);
+				Monast._checkBoxTabButtons.push(button);
+			}
+		});
+
 		// Cookie to save View state
 		Monast._stateCookie = YAHOO.util.Cookie.get(MONAST_COOKIE_KEY);
 		if (!Monast._stateCookie)
@@ -1907,26 +1931,7 @@ var Monast = {
 			});
 		});
 
-		// CheckBox Buttons for Mixed Pannels
-		Monast._checkBoxTabButtons = [];
-		var tabs = [
-		    ["peersDiv", "Peers/Users"],
-			//["meetmesDiv", "Meeting Rooms"],
-			["meetmesDiv", Monast._tabPannel._tabParent.innerText.split('\n')[2]],
-		    ["chanCallDiv", "Channels/Calls"],
-		    ["parkedCallsDiv", "Parked Calls"],
-		    ["queuesDiv", "Queues"]
-		];
-		tabs.each(function (tab) {
-			var name  = tab[0];
-			var title = tab[1];
-			if ($("checkBoxTab_" + name))
-			{
-				var button = new YAHOO.widget.Button("checkBoxTab_" + name, { label: title });
-				button.addListener('checkedChange', Monast.showHidePannels);
-				Monast._checkBoxTabButtons.push(button);
-			}
-		});
+		
 		
 		Monast._tabPannel.getTab(0).addListener('click', function(e) {
 			Monast._checkBoxTabButtons.each(function (button) {
@@ -1963,7 +1968,8 @@ var Monast = {
 		var tabs = {
 			"Mixed Pannels"  : "mixed",
 			"Peers/Users"    : "peersDiv",
-			"Meetme Rooms"   : "meetmesDiv",
+			//"Meetme Rooms"   : "meetmesDiv",
+			"Conference Rooms" : "meetmesDiv",
 			"Channels/Calls" : "chanCallDiv",
 			"Parked Calls"   : "parkedCallsDiv",
 			"Queues"         : "queuesDiv",

@@ -2875,8 +2875,8 @@ class Monast:
 ## Daemonizer
 ##
 #MONAST_PID_FILE = '%s/.monast.pid' % sys.argv[0].rsplit('/', 1)[0]
-MONAST_PID_FILE = '/var/run/monast.pid'
-# MONAST_PID_FILE = os.getcwd() + '/var/run/monast.pid'
+# MONAST_PID_FILE = '/var/run/monast.pid'
+MONAST_PID_FILE = os.getcwd() + '/var/run/monast.pid'
 def createDaemon():
 	if os.fork() == 0:
 		os.setsid()
@@ -2905,8 +2905,8 @@ def RunMonast(MM):
 	opt = optparse.OptionParser()
 	opt.add_option('--config',
 		dest    = "configFile",
-		default = "/etc/monast.conf",
-		# default = os.getcwd() + "/etc/monast.conf",
+		# default = "/etc/monast.conf",
+		default = os.getcwd() + "/etc/monast.conf",
 		help    = "use this config file instead of /etc/monast.conf"
 	)
 	opt.add_option('--info',
@@ -2996,10 +2996,9 @@ def RunMonast(MM):
 			logfile = "/var/log/monast.log"
 		_logHandler = logging.FileHandler(logfile)
 	else:
-		_logHandler = logging.StreamHandler(sys.stdout)
-
-	# logfile = r'C:\MONAST\logs\test.log'
-	# _logHandler = logging.FileHandler(logfile, mode='w')  # rewrite for testing
+		# _logHandler = logging.StreamHandler(sys.stdout)
+		logfile = r'C:\MONAST\logs\test.log'
+		_logHandler = logging.FileHandler(logfile, mode='w')  # rewrite for testing
 
 
 
